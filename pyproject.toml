@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "pan25-generative-authorship-detection"
+version = "0.1.0"
+description = ""
+authors = ["Janek Bevendorff <janek.bevendorff@uni-weimar.de>"]
+readme = "README.md"
+packages = [
+    { include = "pan25_genai_detection" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+click = "^8.1.8"
+gnews = "^0.4.0"
+newspaper3k = "^0.2.8"
+betterproto = {extras = ["compiler"], version = "^1.2.5"}
+pandas = "^2.2.0"
+numpy = "^2.2.3"
+transformers = "^4.49.0"
+torch = "^2.6.0"
+openai = "^1.64.0"
+jsonschema = "^4.23.0"
+markdown = "^3.7.0"
+resiliparse = "^0.15.1"
+backoff = "^2.2.1"
+accelerate = "^1.4.0"
+bitsandbytes = "^0.45.2"
+tqdm = "^4.67.1"
+jinja2 = "^3.1.5"
+google-cloud-aiplatform = "^1.81.0"
+matplotlib = "^3.10.0"
+seaborn = "^0.13.2"
+
+[tool.poetry.scripts]
+news-source = 'pan25_genai_detection.dataset.news_source:main'
+llm-generate = 'pan25_genai_detection.dataset.llm_generate:main'
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
