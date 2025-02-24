@@ -83,8 +83,8 @@ def _map_from_to_file(fnames, *args, fn, skip_existing=True, max_chars=None, **k
               default=os.path.join('data', 'summaries'))
 @click.option('-k', '--api-key', type=click.Path(dir_okay=False, exists=True),
               help='File containing OpenAI API key (if not given, OPENAI_API_KEY env var must be set)')
-@click.option('-n', '--assistant-name', default='news-article-summarizer')
-@click.option('-m', '--model-name', default='gpt-4-turbo-preview')
+@click.option('-n', '--assistant-name', default='pan-summarizer')
+@click.option('-m', '--model-name', default='gpt-4o')
 @click.option('-p', '--parallelism', default=10)
 @click.option('-c', '--max-chars', default=8192,
               help='Maximum article length to send to OpenAI API in characters')

@@ -3,7 +3,10 @@
     "properties": {
         "key_points": {"type": "array", "items": {"type": "string"}},
         "main_topic": {"type": "string"},
-        "stance": {"type": "string", "enum": ["pro", "con", "neutral"]}
+        "tense": {"type": "string", "enum": ["past-tense", "present-tense"]},
+        "pov": {"type": "string", "enum": ["first-person", "third-person"]},
+        "stance": {"type": "string", "enum": ["pro", "con", "neutral"]},
+        "continuation": {"type": "boolean"}
     },
-    "required": ["key_points", "main_topic", "stance"]
+    "required": ["key_points", "main_topic", "tense", "pov", "stance", "continuation"]
 }
