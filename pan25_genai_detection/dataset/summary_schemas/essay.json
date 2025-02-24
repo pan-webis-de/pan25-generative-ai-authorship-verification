@@ -1,0 +1,9 @@
+{
+    "type": "object",
+    "properties": {
+        "key_points": {"type": "array", "items": {"type": "string"}},
+        "main_topic": {"type": "string"},
+        "stance": {"type": "string", "enum": ["pro", "con", "neutral"]}
+    },
+    "required": ["key_points", "main_topic", "stance"]
+}

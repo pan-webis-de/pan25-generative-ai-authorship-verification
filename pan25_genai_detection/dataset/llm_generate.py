@@ -50,7 +50,7 @@ def _generate_instruction_prompt(article_data, template_name):
     target_words = round(int(len(re.split(r'\s+', article_data['text']))) + 9, -1)
 
     env = jinja2.Environment(
-        loader=jinja2.PackageLoader('pan24_llm_dataset', 'prompt_templates')
+        loader=jinja2.PackageLoader('pan25_genai_detection.dataset', 'prompt_templates')
     )
     template = env.get_template(template_name)
     return template.render(article_data=article_data, target_paragraphs=target_paragraphs, target_words=target_words)
@@ -298,7 +298,7 @@ def _huggingface_chat_gen_article(article_data, model, tokenizer, prompt_templat
     return ''
 
 
-@click.group()
+@click.group(context_settings={'show_default': True})
 def main():
     pass
 
@@ -306,13 +306,13 @@ def main():
 @main.command(help='Generate articles using the OpenAI API')
 @click.argument('input_dir', type=click.Path(file_okay=False, exists=True))
 @click.option('-o', '--output-dir', type=click.Path(file_okay=False), help='Output directory',
-              default=os.path.join('data', 'text', 'articles-llm'), show_default=True)
+              default=os.path.join('data', 'text', 'articles-llm'))
 @click.option('-n', '--outdir-name', help='Output subdirectory name (defaults to model name)')
 @click.option('-k', '--api_key', type=click.Path(dir_okay=False, exists=True),
               help='File containing OpenAI API key (if not given, OPENAI_API_KEY env var must be set)')
-@click.option('-m', '--model-name', default='gpt-4-turbo-preview', show_default=True)
-@click.option('-p', '--parallelism', default=5, show_default=True)
-@click.option('--prompt-template', default='news_article_chat.jinja2', show_default=True,
+@click.option('-m', '--model-name', default='gpt-4-turbo-preview')
+@click.option('-p', '--parallelism', default=5)
+@click.option('--prompt-template', default='news_article_chat.jinja2',
               help='Prompt template')
 def openai(input_dir, output_dir, outdir_name, api_key, model_name, parallelism, prompt_template):
     if not api_key and not os.environ.get('OPENAI_API_KEY'):
@@ -336,19 +336,19 @@ def openai(input_dir, output_dir, outdir_name, api_key, model_name, parallelism,
 @main.command(help='Generate articles using the VertexAI API')
 @click.argument('input_dir', type=click.Path(file_okay=False, exists=True))
 @click.option('-o', '--output-dir', type=click.Path(file_okay=False), help='Output directory',
-              default=os.path.join('data', 'text', 'articles-llm'), show_default=True)
-@click.option('-m', '--model-name', default='gemini-pro', show_default=True)
+              default=os.path.join('data', 'text', 'articles-llm'))
+@click.option('-m', '--model-name', default='gemini-pro')
 @click.option('-n', '--outdir-name', help='Output subdirectory name (defaults to model name)')
-@click.option('-p', '--parallelism', default=5, show_default=True)
-@click.option('-t', '--temperature', type=click.FloatRange(0, 1), default=0.6, show_default=True,
+@click.option('-p', '--parallelism', default=5)
+@click.option('-t', '--temperature', type=click.FloatRange(0, 1), default=0.6,
               help='Model temperature')
-@click.option('-x', '--max-output-tokens', type=click.IntRange(0, 1024), default=1024, show_default=True,
+@click.option('-x', '--max-output-tokens', type=click.IntRange(0, 1024), default=1024,
               help='Maximum number of output tokens')
-@click.option('-k', '--top-k', type=click.IntRange(1, 40), default=None, show_default=True,
+@click.option('-k', '--top-k', type=click.IntRange(1, 40), default=None,
               help='Top-k sampling')
-@click.option('--top-p', type=click.FloatRange(0, 1), default=0.95, show_default=True,
+@click.option('--top-p', type=click.FloatRange(0, 1), default=0.95,
               help='Top-p sampling')
-@click.option('--prompt-template', default='news_article_chat.jinja2', show_default=True,
+@click.option('--prompt-template', default='news_article_chat.jinja2',
               help='Prompt template')
 def vertexai(input_dir, output_dir, model_name, outdir_name, parallelism, prompt_template, **kwargs):
     output_dir = os.path.join(output_dir, outdir_name if outdir_name else model_name.replace('@', '-').lower())
@@ -372,7 +372,7 @@ def vertexai(input_dir, output_dir, model_name, outdir_name, parallelism, prompt
 @click.argument('input_dir', type=click.Path(file_okay=False, exists=True))
 @click.argument('model_name')
 @click.option('-o', '--output-dir', type=click.Path(file_okay=False),
-              default=os.path.join('data', 'text', 'articles-llm'), show_default=True, help='Output directory')
+              default=os.path.join('data', 'text', 'articles-llm'), help='Output directory')
 @click.option('-n', '--outdir-name', help='Output subdirectory name (defaults to model name)')
 @click.option('-d', '--device', type=click.Choice(['auto', 'cuda', 'cpu']), default='auto',
               help='Select device to run model on')
@@ -400,7 +400,7 @@ def vertexai(input_dir, output_dir, model_name, outdir_name, parallelism, prompt
 @click.option('-q', '--quantization', type=click.Choice(['4', '8']))
 @click.option('-h', '--headlines-only', is_flag=True, help='Run on previous output and generate missing headlines')
 @click.option('--trust-remote-code', is_flag=True, help='Trust remote code')
-@click.option('--prompt-template', default='news_article_chat.jinja2', show_default=True,
+@click.option('--prompt-template', default='news_article_chat.jinja2',
               help='Prompt template')
 def huggingface_chat(input_dir, model_name, output_dir, outdir_name, device, quantization, top_k, top_p,
                      penalty_alpha, decay_start, decay_factor, better_transformer, flash_attn, headlines_only,

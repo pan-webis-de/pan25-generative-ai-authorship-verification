@@ -1,0 +1,15 @@
+{
+    "type": "object",
+    "properties": {
+        "key_points": {"type": "array", "items": {"type": "string"}},
+        "spokespersons": {"type": "array", "items": {"type": "string"}},
+        "article_type": {
+            "type": "string",
+            "enum": ["breaking news", "press release", "government agency statement", "financial news",
+                     "opinion piece", "fact check", "celebrity news", "general reporting", "speech transcript"]},
+        "dateline": {"type": "string"},
+        "audience": {"type": "string", "enum": ["general public", "professionals", "children"]},
+        "stance": {"type": "string", "enum": ["left-leaning", "right-leaning", "neutral"]}
+    },
+    "required": ["key_points", "spokespersons", "article_type", "dateline", "audience", "stance"]
+}
