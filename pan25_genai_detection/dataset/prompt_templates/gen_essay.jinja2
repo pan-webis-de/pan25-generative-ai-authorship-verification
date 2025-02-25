@@ -1,0 +1,14 @@
+{%- set summary = article_data['summary'] -%}
+{%- if summary['stance'] != 'neutral' -%}
+Write an argumentative essay with a {{ summary['stance'].replace('con', 'contra') }} stance about the topic "{{ summary['main_topic'] }}"
+{%- else -%}
+Write an essay or a formal text about the topic "{{ summary['main_topic'] }}"
+{%- endif %} revolving around the following outline or key points:
+
+{% for kp in summary['key_points'] -%}
+- {{ kp }}
+{% endfor %}
+
+Write the text from a {{ summary['pov'] }} point of view and in the {{ summary['tense'].replace('-', ' ') }}.
+The text should be roughly {{ target_words }} words long{% if target_paragraphs > 1 %} (about {{ target_paragraphs }} paragraphs){% endif %}.
+Do not number the paragraphs and do not add a word count. Also do not address the user or comment on what you are doing. This is not a chat.

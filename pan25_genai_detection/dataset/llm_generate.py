@@ -15,11 +15,11 @@
 import re
 import string
 from functools import partial
-import glob
 import json
 import logging
 from multiprocessing import pool, set_start_method
 import os
+from pathlib import Path
 
 import backoff
 import click
@@ -39,6 +39,8 @@ from vertexai.preview.generative_models import FinishReason, GenerativeModel, Ha
 logger = logging.getLogger(__name__)
 set_start_method('spawn')
 set_seed(42)
+
+_PROMPT_TEMPLATES = ['essay', 'news_article', 'news_article_short', 'kaggle_paraphrase']
 
 
 def _generate_instruction_prompt(article_data, template_name):
@@ -103,20 +105,21 @@ def _iter_jsonl_files(in_files):
             yield f, json.loads(l)
 
 
-def _map_records_to_files(topic_and_record, *args, fn, out_dir, skip_existing=True, out_file_suffix='.txt', **kwargs):
+def _map_records_to_files(topic_and_record, *args, fn, out_dir: Path, skip_existing: bool = True,
+                          out_file_suffix: str = '.txt', **kwargs):
     """
     Take a tuple of ``(topic name, parsed JSON record)``, apply ``fn`` on the JSON and write its output to
     individual text files based on the record's topic and ID under ``out_dir``.
     """
 
     topic, record = topic_and_record
-    out_dir = os.path.join(out_dir, topic)
-    os.makedirs(out_dir, exist_ok=True)
+    out_dir = out_dir / topic
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = (out_dir / record['id']).with_suffix(out_file_suffix)
 
-    out_file = os.path.join(out_dir, record['id'] + out_file_suffix)
-
-    if skip_existing and os.path.isfile(out_file):
+    if skip_existing and out_file.exists():
         return
+    out_file.parent.mkdir(parents=True, exist_ok=True)
 
     try:
         result = fn(record, *args, **kwargs)
@@ -132,9 +135,9 @@ def _map_records_to_files(topic_and_record, *args, fn, out_dir, skip_existing=Tr
 
 
 # noinspection PyStatementEffect
-def _generate_articles(input_dir, gen_fn, parallelism=1):
-    it = _iter_jsonl_files(glob.glob(os.path.join(input_dir, '*.jsonl')))
-    it = ((os.path.splitext(os.path.basename(f))[0], a) for f, a in it)
+def _generate_articles(input_files, gen_fn, parallelism=1):
+    it = _iter_jsonl_files(input_files)
+    it = ((Path(f).stem, a) for f, a in it)
 
     if parallelism == 1:
         [_ for _ in tqdm(map(gen_fn, it), desc='Generating articles', unit=' articles')]
@@ -142,20 +145,6 @@ def _generate_articles(input_dir, gen_fn, parallelism=1):
 
     with pool.ThreadPool(processes=parallelism) as p:
         [_ for _ in tqdm(p.imap(gen_fn, it), desc='Generating articles', unit=' articles')]
-
-
-# noinspection PyStatementEffect
-def _generate_missing_article_headlines(input_dir, gen_fn):
-    article_it = glob.iglob(os.path.join(input_dir, '*', 'art-*.txt'))
-
-    for f in tqdm(article_it, desc='Checking and generating headlines', unit=' articles'):
-        article = open(f, 'r').read()
-        first_line = article.split('\n', 1)[0]
-        if len(first_line) < 25 or len(first_line) > 160 or first_line[-1] == '.':
-            gen_fn((os.path.basename(os.path.dirname(f)), {
-                'id': os.path.splitext(os.path.basename(f))[0],
-                'text': article
-            }))
 
 
 def _clean_text_quirks(text, article_data):
@@ -307,21 +296,21 @@ def main():
 
 
 @main.command(help='Generate articles using the OpenAI API')
-@click.argument('input_dir', type=click.Path(file_okay=False, exists=True))
+@click.argument('prompt-template', type=click.Choice(_PROMPT_TEMPLATES))
+@click.argument('input-jsonl', type=click.Path(dir_okay=False, exists=True), nargs=-1)
 @click.option('-o', '--output-dir', type=click.Path(file_okay=False), help='Output directory',
-              default=os.path.join('data', 'text', 'articles-llm'))
+              default=os.path.join('data', 'text-llm'))
 @click.option('-n', '--outdir-name', help='Output subdirectory name (defaults to model name)')
 @click.option('-k', '--api-key', type=click.Path(dir_okay=False, exists=True),
               help='File containing OpenAI API key (if not given, OPENAI_API_KEY env var must be set)')
-@click.option('-m', '--model-name', default='gpt-4-turbo-preview')
+@click.option('-m', '--model-name', default='gpt-4o')
 @click.option('-p', '--parallelism', default=5)
-@click.option('--prompt-template', default='news_article', help='Prompt template')
-def openai(input_dir, output_dir, outdir_name, api_key, model_name, parallelism, prompt_template):
+def openai(prompt_template, input_jsonl, output_dir, outdir_name, api_key, model_name, parallelism):
     if not api_key and not os.environ.get('OPENAI_API_KEY'):
         raise click.UsageError('Need one of --api-key or OPENAI_API_KEY!')
 
-    output_dir = os.path.join(output_dir, outdir_name if outdir_name else model_name.lower())
-    os.makedirs(output_dir, exist_ok=True)
+    output_dir = Path(output_dir) / (outdir_name if outdir_name else model_name.lower())
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     client = OpenAI(api_key=open(api_key).read().strip() if api_key else os.environ.get('OPENAI_API_KEY'))
 
@@ -332,13 +321,14 @@ def openai(input_dir, output_dir, outdir_name, api_key, model_name, parallelism,
         out_dir=output_dir,
         client=client,
         model_name=model_name)
-    _generate_articles(input_dir, fn, parallelism)
+    _generate_articles(input_jsonl, fn, parallelism)
 
 
 @main.command(help='Generate articles using the VertexAI API')
-@click.argument('input_dir', type=click.Path(file_okay=False, exists=True))
+@click.argument('prompt-template', type=click.Choice(_PROMPT_TEMPLATES))
+@click.argument('input-jsonl', type=click.Path(dir_okay=False, exists=True), nargs=-1)
 @click.option('-o', '--output-dir', type=click.Path(file_okay=False), help='Output directory',
-              default=os.path.join('data', 'text', 'articles-llm'))
+              default=os.path.join('data', 'text-llm'))
 @click.option('-m', '--model-name', default='gemini-pro')
 @click.option('-n', '--outdir-name', help='Output subdirectory name (defaults to model name)')
 @click.option('-p', '--parallelism', default=5)
@@ -350,10 +340,9 @@ def openai(input_dir, output_dir, outdir_name, api_key, model_name, parallelism,
               help='Top-k sampling')
 @click.option('--top-p', type=click.FloatRange(0, 1), default=0.95,
               help='Top-p sampling')
-@click.option('--prompt-template', default='news_article', help='Prompt template')
-def vertexai(input_dir, output_dir, model_name, outdir_name, parallelism, prompt_template, **kwargs):
-    output_dir = os.path.join(output_dir, outdir_name if outdir_name else model_name.replace('@', '-').lower())
-    os.makedirs(output_dir, exist_ok=True)
+def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, parallelism, **kwargs):
+    output_dir = Path(output_dir) / (outdir_name if outdir_name else model_name.replace('@', '-').lower())
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     fn = partial(
         _map_records_to_files,
@@ -364,16 +353,17 @@ def vertexai(input_dir, output_dir, model_name, outdir_name, parallelism, prompt
         **kwargs)
 
     try:
-        _generate_articles(input_dir, fn, parallelism)
+        _generate_articles(input_jsonl, fn, parallelism)
     except GoogleAuthError as e:
         raise click.UsageError('Authentication error:\n' + str(e))
 
 
 @main.command(help='Generate texts using a Huggingface chat model')
-@click.argument('input_dir', type=click.Path(file_okay=False, exists=True))
+@click.argument('prompt-template', type=click.Choice(_PROMPT_TEMPLATES))
+@click.argument('input-jsonl', type=click.Path(dir_okay=False, exists=True), nargs=-1)
 @click.argument('model_name')
 @click.option('-o', '--output-dir', type=click.Path(file_okay=False),
-              default=os.path.join('data', 'text', 'articles-llm'), help='Output directory')
+              default=os.path.join('data', 'text-llm'), help='Output directory')
 @click.option('-n', '--outdir-name', help='Output subdirectory name (defaults to model name)')
 @click.option('-d', '--device', type=click.Choice(['auto', 'cuda', 'cpu']), default='auto',
               help='Select device to run model on')
@@ -399,12 +389,10 @@ def vertexai(input_dir, output_dir, model_name, outdir_name, parallelism, prompt
               help='Use flash-attn 2 (must be installed separately)')
 @click.option('-b', '--better-transformer', is_flag=True, help='Use BetterTransformer')
 @click.option('-q', '--quantization', type=click.Choice(['4', '8']))
-@click.option('-h', '--headlines-only', is_flag=True, help='Run on previous output and generate missing headlines')
 @click.option('--trust-remote-code', is_flag=True, help='Trust remote code')
-@click.option('--prompt-template', default='news_article', help='Prompt template')
-def huggingface_chat(input_dir, model_name, output_dir, outdir_name, device, quantization, top_k, top_p,
+def huggingface_chat(prompt_template, input_jsonl, model_name, output_dir, outdir_name, device, quantization, top_k, top_p,
                      penalty_alpha, decay_start, decay_factor, better_transformer, flash_attn, headlines_only,
-                     trust_remote_code, prompt_template, **kwargs):
+                     trust_remote_code, **kwargs):
 
     model_name_out = model_name
     model_args = {
@@ -424,7 +412,7 @@ def huggingface_chat(input_dir, model_name, output_dir, outdir_name, device, qua
     model_name_out = model_name_out.replace('\\', '/').rstrip('/')
     if '/' in model_name_out:
         model_name_out = '-'.join(model_name_out.split('/')[-2:])
-    output_dir = os.path.join(output_dir, outdir_name if outdir_name else model_name_out.lower())
+    output_dir = Path(output_dir) / (outdir_name if outdir_name else model_name_out.lower())
 
     try:
         model = AutoModelForCausalLM.from_pretrained(
@@ -455,12 +443,7 @@ def huggingface_chat(input_dir, model_name, output_dir, outdir_name, device, qua
     fn = partial(_map_records_to_files, fn=_huggingface_chat_gen_article,
                  prompt_template=prompt_template, out_dir=output_dir, **kwargs)
 
-    if headlines_only:
-        click.echo('Trying to detect and generate missing headlines...', err=True)
-        _generate_missing_article_headlines(input_dir, partial(fn, headline_only=True, out_file_suffix='-headline.txt'))
-        return
-
-    _generate_articles(input_dir, fn)
+    _generate_articles(input_jsonl, fn)
 
 
 if __name__ == "__main__":

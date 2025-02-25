@@ -51,5 +51,6 @@ Start with a short and fitting headline for your article.
 {%- if summary['article_type'] != 'speech transcript' and summary['dateline'] %}
 Below the headline, start the article body with the dateline "{{ summary['dateline'] }} – ".
 {%- endif %}
-Your article should be about {{ target_paragraphs }} paragraphs long (at least {{ target_words }} words).
-Do not comment on what you do. Do not speak to or address the user.
+Your article should be roughly {{ target_words }} words long{% if target_paragraphs > 1 %} (about {{ target_paragraphs }} paragraphs){% endif %}.
+Do not number the paragraphs and do not add a word count. Also do not address the user or comment on what
+you are doing, this is not a chat.
