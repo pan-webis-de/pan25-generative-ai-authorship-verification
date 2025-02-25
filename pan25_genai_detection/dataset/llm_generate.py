@@ -105,15 +105,16 @@ def _iter_jsonl_files(in_files):
             yield f, json.loads(l)
 
 
-def _map_records_to_files(topic_and_record, *args, fn, out_dir: Path, skip_existing: bool = True,
+def _map_records_to_files(infile_and_record, *args, fn, out_dir: Path, skip_existing: bool = True,
                           out_file_suffix: str = '.txt', **kwargs):
     """
     Take a tuple of ``(topic name, parsed JSON record)``, apply ``fn`` on the JSON and write its output to
     individual text files based on the record's topic and ID under ``out_dir``.
     """
 
-    topic, record = topic_and_record
-    out_dir = out_dir / topic
+    in_file, record = infile_and_record
+    if os.path.sep not in record['id']:
+        out_dir /= in_file.stem
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = (out_dir / record['id']).with_suffix(out_file_suffix)
 
@@ -137,7 +138,7 @@ def _map_records_to_files(topic_and_record, *args, fn, out_dir: Path, skip_exist
 # noinspection PyStatementEffect
 def _generate_articles(input_files, gen_fn, parallelism=1):
     it = _iter_jsonl_files(input_files)
-    it = ((Path(f).stem, a) for f, a in it)
+    it = ((Path(f), a) for f, a in it)
 
     if parallelism == 1:
         [_ for _ in tqdm(map(gen_fn, it), desc='Generating articles', unit=' articles')]

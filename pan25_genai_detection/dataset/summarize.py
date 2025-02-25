@@ -31,6 +31,8 @@ from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
+_SUM_TEMPLATES = ['news', 'essay', 'essay_obfs', 'essay_obfs_neighborhood']
+
 
 @click.group(context_settings={'show_default': True})
 def main():
@@ -78,6 +80,7 @@ def _map_from_to_file(fnames, *args, fn, skip_existing=True, max_chars=None, **k
 
 
 @main.command(help='Generate news article summaries using OpenAI API')
+@click.argument('prompt-template', type=click.Choice(_SUM_TEMPLATES))
 @click.argument('input_dir', type=click.Path(file_okay=False, exists=True))
 @click.option('-o', '--output-dir', type=click.Path(file_okay=False), help='Output directory',
               default=os.path.join('data', 'summaries'))
@@ -89,9 +92,8 @@ def _map_from_to_file(fnames, *args, fn, skip_existing=True, max_chars=None, **k
 @click.option('-c', '--max-chars', default=8192,
               help='Maximum article length to send to OpenAI API in characters')
 @click.option('-g', '--input-glob', default='**/*.txt', help='Input file glob')
-@click.option('-t', '--template', type=click.Choice(['news', 'essay']), default='news',
-              help='Summarizer template')
-def summarize(input_dir, output_dir, api_key, assistant_name, model_name, parallelism, max_chars, input_glob, template):
+def summarize(prompt_template, input_dir, output_dir, api_key, assistant_name, model_name,
+              parallelism, max_chars, input_glob):
     if not api_key and not os.environ.get('OPENAI_API_KEY'):
         raise click.UsageError('Need one of --api-key or OPENAI_API_KEY!')
 
@@ -100,7 +102,7 @@ def summarize(input_dir, output_dir, api_key, assistant_name, model_name, parall
     env = jinja2.Environment(
         loader=jinja2.PackageLoader('pan25_genai_detection.dataset', 'prompt_templates')
     )
-    summarizer_instructions = env.get_template(f'sum_{template}.jinja2').render()
+    summarizer_instructions = env.get_template(f'sum_{prompt_template}.jinja2').render()
 
     # Create or update assistant
     assistant = next((a for a in client.beta.assistants.list() if a.name == assistant_name), None)
@@ -115,11 +117,12 @@ def summarize(input_dir, output_dir, api_key, assistant_name, model_name, parall
             instructions=summarizer_instructions,
             model=model_name)
 
-    in_files = list(Path(input_dir).rglob(input_glob))
+    input_dir = Path(input_dir)
+    in_files = list(input_dir.rglob(input_glob))
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    in_out_files = ((f, output_dir / f.parent.name / (f.stem + '.json')) for f in in_files)
+    in_out_files = list((f, output_dir / f.relative_to(input_dir).with_suffix('.json')) for f in in_files)
     fn = partial(_map_from_to_file, fn=_summarize, max_chars=max_chars, client=client, assistant=assistant)
 
     with pool.ThreadPool(processes=parallelism) as p:
@@ -128,8 +131,8 @@ def summarize(input_dir, output_dir, api_key, assistant_name, model_name, parall
 
 
 @main.command(help='Validate LLM-generated JSON summary files', context_settings={'show_default': True})
+@click.argument('schema', type=click.Choice(_SUM_TEMPLATES))
 @click.argument('input_file', type=click.Path(dir_okay=False, exists=True), nargs=-1)
-@click.option('-s', '--schema', type=click.Choice(['news', 'essay']), default='news')
 def validate(input_file, schema):
     if not input_file:
         raise click.UsageError('No input file specified')
