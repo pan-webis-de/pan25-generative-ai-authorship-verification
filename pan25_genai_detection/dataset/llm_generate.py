@@ -342,7 +342,7 @@ def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, 
 @click.option('-n', '--outdir-name', help='Output subdirectory name (defaults to model name)')
 @click.option('-d', '--device', type=click.Choice(['auto', 'cuda', 'cpu']), default='auto',
               help='Select device to run model on')
-@click.option('-m', '--min-length', type=click.IntRange(1), default=370,
+@click.option('-m', '--min-length', type=click.IntRange(1), default=350,
               show_default=True, help='Minimum length in tokens')
 @click.option('-x', '--max-new-tokens', type=click.IntRange(1), default=1000,
               show_default=True, help='Maximum new tokens')
@@ -350,23 +350,21 @@ def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, 
               show_default=True, help='Length decay penalty start')
 @click.option('--decay-factor', type=click.FloatRange(1), default=1.01,
               show_default=True, help='Length decay penalty factor')
-@click.option('-b', '--num-beams', type=click.IntRange(1), default=5,
-              show_default=True, help='Number of search beams')
-@click.option('-k', '--top-k', type=click.IntRange(0), default=0,
+@click.option('-k', '--top-k', type=click.IntRange(0, min_open=True), default=0,
               show_default=True, help='Top-k sampling (0 to disable)')
-@click.option('-p', '--top-p', type=click.FloatRange(0, 1), default=0.9,
+@click.option('-p', '--top-p', type=click.FloatRange(0, 1, min_open=True), default=0.9,
               show_default=True, help='Top-p sampling')
-@click.option('-a', '--penalty-alpha', type=click.FloatRange(0, 1), default=0.0,
+@click.option('-a', '--penalty-alpha', type=click.FloatRange(0, 1, min_open=True), default=0.0,
               show_default=True, help='Contrastive search penalty')
-@click.option('-t', '--temperature', type=click.FloatRange(0), default=2,
+@click.option('-t', '--temperature', type=click.FloatRange(0, min_open=True), default=0.6,
               show_default=True, help='Model temperature')
 @click.option('-f', '--flash-attn', is_flag=True,
               help='Use flash-attn 2 (must be installed separately)')
 @click.option('-b', '--better-transformer', is_flag=True, help='Use BetterTransformer')
 @click.option('-q', '--quantization', type=click.Choice(['4', '8']))
 @click.option('--trust-remote-code', is_flag=True, help='Trust remote code')
-def huggingface_chat(prompt_template, input_jsonl, model_name, output_dir, outdir_name, device, quantization, top_k, top_p,
-                     penalty_alpha, decay_start, decay_factor, better_transformer, flash_attn, headlines_only,
+def huggingface_chat(prompt_template, input_jsonl, model_name, output_dir, outdir_name, device, quantization, top_k,
+                     top_p, penalty_alpha, decay_start, decay_factor, better_transformer, flash_attn, headlines_only,
                      trust_remote_code, **kwargs):
 
     model_name_out = model_name
