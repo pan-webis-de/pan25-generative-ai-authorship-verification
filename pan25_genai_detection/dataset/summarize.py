@@ -131,6 +131,9 @@ def summarize(input_dir, output_dir, api_key, assistant_name, model_name, parall
 @click.argument('input_file', type=click.Path(dir_okay=False, exists=True), nargs=-1)
 @click.option('-s', '--schema', type=click.Choice(['news', 'essay']), default='news')
 def validate(input_file, schema):
+    if not input_file:
+        raise click.UsageError('No input file specified')
+
     syntax_errors = []
     validation_errors = []
     schema = json.load(open(Path(__file__).parent / 'summary_schemas' / f'{schema}.json', 'r'))
@@ -148,7 +151,7 @@ def validate(input_file, schema):
         sys.exit(0)
 
     if syntax_errors:
-        click.echo('Not well-formed:', err=True)
+        click.echo('Syntax errors:', err=True)
         for e, f in sorted(syntax_errors, key=lambda x: x[1]):
             click.echo(f'  {f}: {e}', err=True)
 
@@ -165,20 +168,25 @@ def validate(input_file, schema):
 @click.argument('text_dir', type=click.Path(exists=True, file_okay=False))
 @click.option('-o', '--output-file', type=click.Path(dir_okay=False, exists=False), help='Output file',
               default=os.path.join('data', 'summaries', 'combined.jsonl'))
-@click.option('-g', '--text-glob', default='**/*.txt', help='Text file glob')
-def combine(sum_dir, text_dir, output_file, text_glob):
+@click.option('-p', '--id-prefix', help='Prefix to add to text IDs')
+@click.option('-g', '--summary-glob', default='**/*.json', help='Summary JSON file glob')
+def combine(sum_dir, text_dir, output_file, id_prefix, summary_glob):
     sum_dir = Path(sum_dir)
     text_dir = Path(text_dir)
     output_file = Path(output_file)
     output_file.parent.mkdir(parents=True, exist_ok=True)
 
     with open(output_file, 'w') as out:
-        for t in tqdm(text_dir.rglob(text_glob), desc='Combining texts and summaries'):
-            s = sum_dir / t.parent.name / (t.stem + '.json')
+        for s in tqdm(list(sum_dir.rglob(summary_glob)), desc='Combining texts and summaries'):
+            s_rel = s.relative_to(sum_dir)
+            t = text_dir / s_rel.with_suffix('.txt')
+            text_id = str(s_rel.with_suffix(''))
+            if id_prefix:
+                text_id = os.path.join(id_prefix, text_id)
             article_data = {
-                'id': '/'.join((s.parent.name, s.stem)),
-                'text': t.read_text(),
-                'summary': json.load(open(s, 'r')) if s.exists() else None
+                'id': text_id,
+                'text': t.read_text().strip() if t.exists() else None,
+                'summary': json.load(open(s, 'r'))
             }
             json.dump(article_data, out, ensure_ascii=False)
             out.write('\n')
