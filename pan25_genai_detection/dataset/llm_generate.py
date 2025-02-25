@@ -148,29 +148,9 @@ def _generate_articles(input_files, gen_fn, parallelism=1):
         [_ for _ in tqdm(p.imap(gen_fn, it), desc='Generating articles', unit=' articles')]
 
 
-def _clean_text_quirks(text, article_data):
+def _clean_text_quirks(text):
     """Clean up some common LLM text quirks."""
-
-    # Remove certain generation quirks
-    text = re.sub(r'^[a-z-]+>\s*', '', text)   # Cut-off special tokens at the beginning
-    text = re.sub(r'^ *[IVX0-9]+\.\s+', '', text, flags=re.M)
-    text = re.sub(
-        r'^(?:(?:Sub)?Title|(?:Sub)?Headline|Paragraph|Introduction|Article(?: Title)?|Dateline)(?: \d+)?(?::\s+|\n+)',
-        '',
-        text, flags=re.M | re.I)
-    text = re.sub(r'^[\[(]?(?:Paragraph|Headline)(?: \d+)[])]?:?\s+', '', text, flags=re.M | re.I)
-    text = re.sub(r'^FOR IMMEDIATE RELEASE:?\n\n', '', text)
     text = re.sub(r'\n{3,}', '\n\n', text)
-
-    if article_data.get('dateline'):
-        text = text.replace('\n' + article_data['dateline'] + ' –\n\n', '\n' + article_data['dateline'] + ' – ')
-
-    # Strip quotes around headlines
-    text = text.split('\n', 1)
-    if len(text) == 2:
-        text[0] = re.sub(r'^"(.+)"$', r'\1', text[0], flags=re.M)
-    text = '\n'.join(text)
-
     return text.strip()
 
 
@@ -183,7 +163,7 @@ def _openai_gen_article(article_data, client: OpenAI, model_name: str, prompt_te
         ]
     )
     response = html2text.extract_plain_text(markdown.markdown(response.choices[0].message.content)).strip()
-    return _clean_text_quirks(response, article_data)
+    return _clean_text_quirks(response)
 
 
 @backoff.on_exception(backoff.expo, GoogleAPIError, max_tries=3)
@@ -247,17 +227,11 @@ def _vertexai_gen_article(article_data, model_name: str, prompt_template: str, *
         response = response.replace('&&&', 'sex')
 
     response = html2text.extract_plain_text(markdown.markdown(response)).strip()
-    return _clean_text_quirks(response, article_data)
+    return _clean_text_quirks(response)
 
 
 def _huggingface_chat_gen_article(article_data, model, tokenizer, prompt_template, headline_only=False, **kwargs):
-    role = 'user'
-    if model.config.model_type in ['llama', 'qwen2']:
-        role = 'system'
-    messages = [{'role': role, 'content': _generate_instruction_prompt(article_data, prompt_template)}]
-    if role == 'system':
-        messages.append({'role': 'user', 'content': ''})
-
+    messages = [{'role': 'user', 'content': _generate_instruction_prompt(article_data, prompt_template)}]
     model_inputs = _apply_chat_template(tokenizer, model.config.model_type, messages).to(model.device)
 
     for _ in range(3):
@@ -272,7 +246,7 @@ def _huggingface_chat_gen_article(article_data, model, tokenizer, prompt_templat
 
         # Strip markdown
         response = html2text.extract_plain_text(markdown.markdown(response)).strip()
-        response = _clean_text_quirks(response, article_data)
+        response = _clean_text_quirks(response)
 
         # Retry if response empty
         if not response:
