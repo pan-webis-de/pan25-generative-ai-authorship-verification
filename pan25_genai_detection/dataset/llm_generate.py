@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 set_start_method('spawn')
 set_seed(42)
 
-_PROMPT_TEMPLATES = ['essay', 'news_article', 'news_article_short', 'kaggle_paraphrase']
+_PROMPT_TEMPLATES = ['essay', 'essay_obfs_neighborhood', 'news_article', 'news_article_short', 'kaggle_paraphrase']
 
 
 def _generate_instruction_prompt(article_data, template_name):

@@ -1,0 +1,15 @@
+{%- set summary = article_data['summary'] -%}
+You are an author writing an essay about your neighborhood. Write the essay and incorporate the following key points:
+{% for kp in summary['key_points'] -%}
+- {{ kp }}
+{% endfor %}
+
+Write from a {{ summary['pov'] }} point of view and in the {{ summary['tense'].replace('-', ' ') }}.
+Since you do not want to be recognized as the actual author of the essay, you try to obfuscate your personal
+writing style by doing (among other things) the following:
+{% for si in summary['style_instructions'] -%}
+- {{ si }}
+{% endfor %}
+
+The text should be roughly {{ target_words }} words long{% if target_paragraphs > 1 %} (about {{ target_paragraphs }} paragraphs){% endif %}.
+Do not number the paragraphs and do not add a word count. Also do not address the user or comment on what you are doing. This is not a chat.
