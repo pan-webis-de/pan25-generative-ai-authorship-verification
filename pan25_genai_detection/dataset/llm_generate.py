@@ -52,7 +52,10 @@ def _generate_instruction_prompt(article_data, template_name):
     env = jinja2.Environment(
         loader=jinja2.PackageLoader('pan25_genai_detection.dataset', 'prompt_templates')
     )
-    template = env.get_template(template_name)
+    try:
+        template = env.get_template(f'gen_{template_name}.jinja2')
+    except jinja2.TemplateNotFound:
+        raise click.UsageError(f'No such template: {template_name}.')
     return template.render(article_data=article_data, target_paragraphs=target_paragraphs, target_words=target_words)
 
 
@@ -308,12 +311,11 @@ def main():
 @click.option('-o', '--output-dir', type=click.Path(file_okay=False), help='Output directory',
               default=os.path.join('data', 'text', 'articles-llm'))
 @click.option('-n', '--outdir-name', help='Output subdirectory name (defaults to model name)')
-@click.option('-k', '--api_key', type=click.Path(dir_okay=False, exists=True),
+@click.option('-k', '--api-key', type=click.Path(dir_okay=False, exists=True),
               help='File containing OpenAI API key (if not given, OPENAI_API_KEY env var must be set)')
 @click.option('-m', '--model-name', default='gpt-4-turbo-preview')
 @click.option('-p', '--parallelism', default=5)
-@click.option('--prompt-template', default='news_article_chat.jinja2',
-              help='Prompt template')
+@click.option('--prompt-template', default='news_article', help='Prompt template')
 def openai(input_dir, output_dir, outdir_name, api_key, model_name, parallelism, prompt_template):
     if not api_key and not os.environ.get('OPENAI_API_KEY'):
         raise click.UsageError('Need one of --api-key or OPENAI_API_KEY!')
@@ -348,8 +350,7 @@ def openai(input_dir, output_dir, outdir_name, api_key, model_name, parallelism,
               help='Top-k sampling')
 @click.option('--top-p', type=click.FloatRange(0, 1), default=0.95,
               help='Top-p sampling')
-@click.option('--prompt-template', default='news_article_chat.jinja2',
-              help='Prompt template')
+@click.option('--prompt-template', default='news_article', help='Prompt template')
 def vertexai(input_dir, output_dir, model_name, outdir_name, parallelism, prompt_template, **kwargs):
     output_dir = os.path.join(output_dir, outdir_name if outdir_name else model_name.replace('@', '-').lower())
     os.makedirs(output_dir, exist_ok=True)
@@ -400,8 +401,7 @@ def vertexai(input_dir, output_dir, model_name, outdir_name, parallelism, prompt
 @click.option('-q', '--quantization', type=click.Choice(['4', '8']))
 @click.option('-h', '--headlines-only', is_flag=True, help='Run on previous output and generate missing headlines')
 @click.option('--trust-remote-code', is_flag=True, help='Trust remote code')
-@click.option('--prompt-template', default='news_article_chat.jinja2',
-              help='Prompt template')
+@click.option('--prompt-template', default='news_article', help='Prompt template')
 def huggingface_chat(input_dir, model_name, output_dir, outdir_name, device, quantization, top_k, top_p,
                      penalty_alpha, decay_start, decay_factor, better_transformer, flash_attn, headlines_only,
                      trust_remote_code, prompt_template, **kwargs):
@@ -450,7 +450,7 @@ def huggingface_chat(input_dir, model_name, output_dir, outdir_name, device, qua
         del kwargs['min_length']
         del kwargs['exponential_decay_length_penalty']
         kwargs['max_new_tokens'] = 60
-        prompt_template = 'headline_chat.jinja2'
+        prompt_template = 'headline_chat'
 
     fn = partial(_map_records_to_files, fn=_huggingface_chat_gen_article,
                  prompt_template=prompt_template, out_dir=output_dir, **kwargs)
