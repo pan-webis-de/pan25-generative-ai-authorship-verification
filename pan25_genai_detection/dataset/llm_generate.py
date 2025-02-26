@@ -375,10 +375,8 @@ def huggingface_chat(model_name, prompt_template, input_jsonl, output_dir, outdi
         })
         model_name_out = model_name + f'-{quantization}bit'
 
-    model_name_out = model_name_out.replace('\\', '/').rstrip('/')
-    if '/' in model_name_out:
-        model_name_out = '-'.join(model_name_out.split('/')[-2:])
-    output_dir = Path(output_dir) / (outdir_name if outdir_name else model_name_out.lower())
+    model_name_out = Path(model_name_out).name.lower()
+    output_dir = Path(output_dir) / (outdir_name if outdir_name else model_name_out)
 
     try:
         model = AutoModelForCausalLM.from_pretrained(
