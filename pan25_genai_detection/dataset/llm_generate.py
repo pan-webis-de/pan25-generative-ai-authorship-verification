@@ -363,8 +363,8 @@ def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, 
 @click.option('-b', '--better-transformer', is_flag=True, help='Use BetterTransformer')
 @click.option('-q', '--quantization', type=click.Choice(['4', '8']))
 @click.option('--trust-remote-code', is_flag=True, help='Trust remote code')
-def huggingface_chat(model_name, prompt_template, input_jsonl, output_dir, outdir_name, device, quantization, top_k,
-                     top_p, penalty_alpha, decay_start, decay_factor, better_transformer, flash_attn, headlines_only,
+def huggingface_chat(model_name, prompt_template, input_jsonl, output_dir, outdir_name, device, quantization,
+                     top_k, top_p, penalty_alpha, decay_start, decay_factor, better_transformer, flash_attn,
                      trust_remote_code, **kwargs):
 
     model_name_out = model_name
@@ -406,12 +406,6 @@ def huggingface_chat(model_name, prompt_template, input_jsonl, output_dir, outdi
         penalty_alpha=penalty_alpha,
         exponential_decay_length_penalty=(decay_start, decay_factor)
     ))
-
-    if headlines_only:
-        del kwargs['min_length']
-        del kwargs['exponential_decay_length_penalty']
-        kwargs['max_new_tokens'] = 60
-        prompt_template = 'headline_chat'
 
     fn = partial(_map_records_to_files, fn=_huggingface_chat_gen_article,
                  prompt_template=prompt_template, out_dir=output_dir, **kwargs)
