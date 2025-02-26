@@ -65,18 +65,7 @@ def _apply_chat_template(tokenizer, model_type, messages):
     chat_template = tokenizer.chat_template
 
     if not chat_template:
-        if 'alpaca' in tokenizer.name_or_path.lower():
-            chat_template = (
-                'Below is an instruction that describes a task. '
-                'Write a response that appropriately completes the request.\n\n'
-                '### Instruction:\n'
-                '{% for message in messages -%}\n'
-                '{{ message["content"] }}\n'
-                '{% endfor %}\n'
-                '{% if add_generation_prompt %}\n'
-                '### Response:\n'
-                '{% endif %}')
-        elif model_type == 'llama':
+        if model_type == 'llama':
             chat_template = (
                 '{% for message in messages -%}\n'
                 '### {{ message["role"].capitalize() }}:\n'
@@ -94,9 +83,8 @@ def _apply_chat_template(tokenizer, model_type, messages):
                 '{% if add_generation_prompt %}\n'
                 'Response:\n'
                 '{% endif %}')
-
     return tokenizer.apply_chat_template(
-        messages, chat_template=chat_template, return_tensors='pt', add_generation_prompt=True)
+        messages, chat_template=chat_template, tokenize=False, add_generation_prompt=True)
 
 
 def _iter_jsonl_files(in_files):
@@ -150,6 +138,11 @@ def _generate_articles(input_files, gen_fn, parallelism=1):
 
 def _clean_text_quirks(text):
     """Clean up some common LLM text quirks."""
+
+    # Clean up Markdown
+    text = html2text.extract_plain_text(markdown.markdown(text))
+
+    # Normalize white space
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
@@ -162,8 +155,7 @@ def _openai_gen_article(article_data, client: OpenAI, model_name: str, prompt_te
             {'role': 'system', 'content': _generate_instruction_prompt(article_data, prompt_template)}
         ]
     )
-    response = html2text.extract_plain_text(markdown.markdown(response.choices[0].message.content)).strip()
-    return _clean_text_quirks(response)
+    return _clean_text_quirks(response.choices[0].message.content)
 
 
 @backoff.on_exception(backoff.expo, GoogleAPIError, max_tries=3)
@@ -226,41 +218,37 @@ def _vertexai_gen_article(article_data, model_name: str, prompt_template: str, *
     if sex_censored:
         response = response.replace('&&&', 'sex')
 
-    response = html2text.extract_plain_text(markdown.markdown(response)).strip()
     return _clean_text_quirks(response)
 
 
-def _huggingface_chat_gen_article(article_data, model, tokenizer, prompt_template, headline_only=False, **kwargs):
+def _huggingface_chat_gen_article(article_data, model, tokenizer, prompt_template, strip_thinking=False, **kwargs):
     messages = [{'role': 'user', 'content': _generate_instruction_prompt(article_data, prompt_template)}]
-    model_inputs = _apply_chat_template(tokenizer, model.config.model_type, messages).to(model.device)
+    model_inputs = _apply_chat_template(tokenizer, model.config.model_type, messages)
+    model_inputs = tokenizer(model_inputs, return_tensors='pt').to(model.device)
 
     for _ in range(3):
-        generated_ids = model.generate(
-            model_inputs,
-            do_sample='penalty_alpha' not in kwargs,
+        output_ids = model.generate(
+            **model_inputs,
+            do_sample=not kwargs.get('penalty_alpha'),
             eos_token_id=tokenizer.eos_token_id,
             pad_token_id=tokenizer.eos_token_id,
-            **kwargs)
+            **kwargs)[0]
 
-        response = tokenizer.decode(generated_ids[0][len(model_inputs[0]):], skip_special_tokens=True)
+        # Strip prompt
+        output_ids = output_ids[len(model_inputs[0]):]
 
-        # Strip markdown
-        response = html2text.extract_plain_text(markdown.markdown(response)).strip()
-        response = _clean_text_quirks(response)
+        # Strip CoT output
+        if strip_thinking:
+            think_token = tokenizer('</think>', add_special_tokens=False).input_ids[0]
+            think_idx = (output_ids == think_token).to(torch.int).argmax()
+            output_ids = output_ids[think_idx:]
+
+        response = _clean_text_quirks(tokenizer.decode(output_ids, skip_special_tokens=True))
 
         # Retry if response empty
         if not response:
             continue
-
-        if headline_only:
-            response = response.split('\n', 1)[0]       # Take only first line
-        elif response[-1] in string.ascii_letters:
-            trim_len = response.rfind('\n\n')
-            if len(response) - trim_len > 500:
-                trim_len = response.rfind('. ') + 1
-            response = response[:trim_len]                          # Some models tend to stop mid-sentence
-
-        return response.rstrip()
+        return response
 
     return ''
 
@@ -342,11 +330,11 @@ def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, 
 @click.option('-n', '--outdir-name', help='Output subdirectory name (defaults to model name)')
 @click.option('-d', '--device', type=click.Choice(['auto', 'cuda', 'cpu']), default='auto',
               help='Select device to run model on')
-@click.option('-m', '--min-length', type=click.IntRange(1), default=350,
+@click.option('-m', '--min-length', type=click.IntRange(1), default=300,
               show_default=True, help='Minimum length in tokens')
-@click.option('-x', '--max-new-tokens', type=click.IntRange(1), default=1000,
+@click.option('-x', '--max-new-tokens', type=click.IntRange(1), default=1500,
               show_default=True, help='Maximum new tokens')
-@click.option('-s', '--decay-start', type=click.IntRange(1), default=500,
+@click.option('-s', '--decay-start', type=click.IntRange(1), default=1000,
               show_default=True, help='Length decay penalty start')
 @click.option('--decay-factor', type=click.FloatRange(1), default=1.01,
               show_default=True, help='Length decay penalty factor')
@@ -360,12 +348,15 @@ def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, 
               show_default=True, help='Model temperature')
 @click.option('-f', '--flash-attn', is_flag=True,
               help='Use flash-attn 2 (must be installed separately)')
+@click.option('--strip-thinking', is_flag=True, help='Strip CoT output from the beginning')
+@click.option('--cot-factor', type=click.IntRange(1), default=3,
+              help='Multiply length limits if --strip-thinking is set')
 @click.option('-b', '--better-transformer', is_flag=True, help='Use BetterTransformer')
 @click.option('-q', '--quantization', type=click.Choice(['4', '8']))
 @click.option('--trust-remote-code', is_flag=True, help='Trust remote code')
 def huggingface_chat(model_name, prompt_template, input_jsonl, output_dir, outdir_name, device, quantization,
-                     top_k, top_p, penalty_alpha, decay_start, decay_factor, better_transformer, flash_attn,
-                     trust_remote_code, **kwargs):
+                     min_length, max_new_tokens, top_k, top_p, penalty_alpha, decay_start, decay_factor,
+                     strip_thinking, cot_factor, better_transformer, flash_attn, trust_remote_code, **kwargs):
 
     model_name_out = model_name
     model_args = {
@@ -398,13 +389,21 @@ def huggingface_chat(model_name, prompt_template, input_jsonl, output_dir, outdi
     tokenizer = AutoTokenizer.from_pretrained(
         model_name, use_cache=False, padding_side='left', trust_remote_code=trust_remote_code)
 
+    if strip_thinking:
+        max_new_tokens *= cot_factor
+        min_length *= cot_factor
+        decay_start *= cot_factor
+
     kwargs.update(dict(
         model=model,
         tokenizer=tokenizer,
+        max_new_tokens=max_new_tokens,
+        min_length=min_length,
         top_k=top_k if top_k > 0 else None,
         top_p=top_p if penalty_alpha > 0 and top_k > 1 else None,
         penalty_alpha=penalty_alpha,
-        exponential_decay_length_penalty=(decay_start, decay_factor)
+        exponential_decay_length_penalty=(decay_start, decay_factor),
+        strip_thinking=strip_thinking
     ))
 
     fn = partial(_map_records_to_files, fn=_huggingface_chat_gen_article,
