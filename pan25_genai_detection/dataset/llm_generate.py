@@ -350,11 +350,11 @@ def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, 
               show_default=True, help='Length decay penalty start')
 @click.option('--decay-factor', type=click.FloatRange(1), default=1.01,
               show_default=True, help='Length decay penalty factor')
-@click.option('-k', '--top-k', type=click.IntRange(0, min_open=True), default=0,
+@click.option('-k', '--top-k', type=click.IntRange(0), default=0,
               show_default=True, help='Top-k sampling (0 to disable)')
-@click.option('-p', '--top-p', type=click.FloatRange(0, 1, min_open=True), default=0.9,
+@click.option('-p', '--top-p', type=click.FloatRange(0, 1), default=0.9,
               show_default=True, help='Top-p sampling')
-@click.option('-a', '--penalty-alpha', type=click.FloatRange(0, 1, min_open=True), default=0.0,
+@click.option('-a', '--penalty-alpha', type=click.FloatRange(0, 1), default=0.0,
               show_default=True, help='Contrastive search penalty')
 @click.option('-t', '--temperature', type=click.FloatRange(0, min_open=True), default=0.6,
               show_default=True, help='Model temperature')
