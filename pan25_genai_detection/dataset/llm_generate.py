@@ -334,9 +334,9 @@ def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, 
 
 
 @main.command(help='Generate texts using a Huggingface chat model')
+@click.argument('model_name')
 @click.argument('prompt-template', type=click.Choice(_PROMPT_TEMPLATES))
 @click.argument('input-jsonl', type=click.Path(dir_okay=False, exists=True), nargs=-1)
-@click.argument('model_name')
 @click.option('-o', '--output-dir', type=click.Path(file_okay=False),
               default=os.path.join('data', 'text-llm'), help='Output directory')
 @click.option('-n', '--outdir-name', help='Output subdirectory name (defaults to model name)')
@@ -363,7 +363,7 @@ def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, 
 @click.option('-b', '--better-transformer', is_flag=True, help='Use BetterTransformer')
 @click.option('-q', '--quantization', type=click.Choice(['4', '8']))
 @click.option('--trust-remote-code', is_flag=True, help='Trust remote code')
-def huggingface_chat(prompt_template, input_jsonl, model_name, output_dir, outdir_name, device, quantization, top_k,
+def huggingface_chat(model_name, prompt_template, input_jsonl, output_dir, outdir_name, device, quantization, top_k,
                      top_p, penalty_alpha, decay_start, decay_factor, better_transformer, flash_attn, headlines_only,
                      trust_remote_code, **kwargs):
 
