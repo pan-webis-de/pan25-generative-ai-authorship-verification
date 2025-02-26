@@ -344,7 +344,7 @@ def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, 
               show_default=True, help='Top-p sampling')
 @click.option('-a', '--penalty-alpha', type=click.FloatRange(0, 1), default=0.0,
               show_default=True, help='Contrastive search penalty')
-@click.option('-t', '--temperature', type=click.FloatRange(0, min_open=True), default=0.6,
+@click.option('-t', '--temperature', type=click.FloatRange(0, min_open=True), default=0.9,
               show_default=True, help='Model temperature')
 @click.option('-f', '--flash-attn', is_flag=True,
               help='Use flash-attn 2 (must be installed separately)')
@@ -366,10 +366,12 @@ def huggingface_chat(model_name, prompt_template, input_jsonl, output_dir, outdi
         model_args.update({'attn_implementation': 'flash_attention_2'})
     if quantization:
         model_args.update({
-            'quantization_config': BitsAndBytesConfig(**{
-                f'load_in_{quantization}bit': True,
-                f'bnb_{quantization}bit_compute_dtype': torch.bfloat16
-            })
+            'quantization_config': BitsAndBytesConfig(
+                **{f'load_in_{quantization}bit': True},
+                bnb_4bit_use_double_quant=True,
+                bnb_4bit_compute_dtype=torch.bfloat16,
+                bnb_4bit_quant_type='nf4'
+            )
         })
         model_name_out = model_name + f'-{quantization}bit'
 
