@@ -1,0 +1,7 @@
+{
+    "type": "object",
+    "properties": {
+        "key_points": {"type": "array", "items": {"type": "string"}}
+    },
+    "required": ["key_points"]
+}

@@ -18,20 +18,16 @@ import logging
 from multiprocessing import pool
 import os
 from pathlib import Path
-import sys
-import time
 
 import backoff
 import click
 import jinja2
-import jsonschema
-from openai import NotFoundError, OpenAI, OpenAIError
-from openai.types.beta import Assistant
+from openai import OpenAI, OpenAIError
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
-_SUM_TEMPLATES = ['news', 'essay', 'essay_obfs', 'essay_obfs_neighborhood']
+_SUM_TEMPLATES = ['news', 'essay', 'essay_obfs', 'essay_obfs_neighborhood', 'fiction_cont']
 
 
 @click.group(context_settings={'show_default': True})
@@ -40,27 +36,17 @@ def main():
 
 
 @backoff.on_exception(backoff.expo, OpenAIError, max_tries=5)
-def _summarize(article: str, client: OpenAI, assistant: Assistant):
-    thread = client.beta.threads.create()
-    client.beta.threads.messages.create(thread_id=thread.id, role='user', content=article)
-
-    run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=assistant.id)
-    while run.status in ('queued', 'in_progress'):
-        run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
-        time.sleep(0.5)
-    if run.status == 'failed':
-        logger.error('Run %s failed: %s', run.id, run.last_error.message)
-        return
-
-    response = client.beta.threads.messages.list(thread_id=thread.id).data[0]
-    response = '\n'.join(r.text.value for r in response.content)
+def _summarize(text: str, client: OpenAI, model_name: str, template: jinja2.Template):
+    response = client.chat.completions.create(
+        model=model_name,
+        messages=[
+            {'role': 'system', 'content': template.render(text=text)},
+            {'role': 'user', 'content': text}
+        ]
+    )
+    response = response.choices[0].message.content
     if response.startswith('```json'):
         response = response.strip('`')[len('json'):]
-
-    try:
-        client.beta.threads.delete(thread_id=thread.id)
-    except NotFoundError:
-        pass
     return response.strip()
 
 
@@ -79,7 +65,7 @@ def _map_from_to_file(fnames, *args, fn, skip_existing=True, max_chars=None, **k
     file_out.write_text(result)
 
 
-@main.command(help='Generate news article summaries using OpenAI API')
+@main.command(help='Generate text summaries using OpenAI API')
 @click.argument('prompt-template', type=click.Choice(_SUM_TEMPLATES))
 @click.argument('input_dir', type=click.Path(file_okay=False, exists=True))
 @click.option('-o', '--output-dir', type=click.Path(file_okay=False), help='Output directory',
@@ -102,68 +88,23 @@ def summarize(prompt_template, input_dir, output_dir, api_key, assistant_name, m
     env = jinja2.Environment(
         loader=jinja2.PackageLoader('pan25_genai_detection.dataset', 'prompt_templates')
     )
-    summarizer_instructions = env.get_template(f'sum_{prompt_template}.jinja2').render()
-
-    # Create or update assistant
-    assistant = next((a for a in client.beta.assistants.list() if a.name == assistant_name), None)
-    if not assistant:
-        assistant = client.beta.assistants.create(
-            name=assistant_name,
-            instructions=summarizer_instructions,
-            model=model_name)
-    elif assistant.model != model_name or assistant.instructions != summarizer_instructions:
-        assistant = client.beta.assistants.update(
-            assistant_id=assistant.id,
-            instructions=summarizer_instructions,
-            model=model_name)
-
+    template = env.get_template(f'sum_{prompt_template}.jinja2')
     input_dir = Path(input_dir)
     in_files = list(input_dir.rglob(input_glob))
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     in_out_files = list((f, output_dir / f.relative_to(input_dir).with_suffix('.json')) for f in in_files)
-    fn = partial(_map_from_to_file, fn=_summarize, max_chars=max_chars, client=client, assistant=assistant)
+    fn = partial(_map_from_to_file,
+                 fn=_summarize,
+                 max_chars=max_chars,
+                 client=client,
+                 model_name=model_name,
+                 template=template)
 
     with pool.ThreadPool(processes=parallelism) as p:
         # noinspection PyStatementEffect
         [_ for _ in tqdm(p.imap(fn, in_out_files), desc='Generating summaries', unit='sum')]
-
-
-@main.command(help='Validate LLM-generated JSON summary files', context_settings={'show_default': True})
-@click.argument('schema', type=click.Choice(_SUM_TEMPLATES))
-@click.argument('input_file', type=click.Path(dir_okay=False, exists=True), nargs=-1)
-def validate(input_file, schema):
-    if not input_file:
-        raise click.UsageError('No input file specified')
-
-    syntax_errors = []
-    validation_errors = []
-    schema = json.load(open(Path(__file__).parent / 'summary_schemas' / f'{schema}.json', 'r'))
-
-    for fname in tqdm(input_file, desc='Validating JSON files', unit='files'):
-        try:
-            jsonschema.validate(instance=json.load(open(fname, 'r')), schema=schema)
-        except json.JSONDecodeError as e:
-            syntax_errors.append((e.msg, fname))
-        except jsonschema.ValidationError as e:
-            validation_errors.append((e.message, fname))
-
-    if not syntax_errors and not validation_errors:
-        click.echo('No errors.', err=True)
-        sys.exit(0)
-
-    if syntax_errors:
-        click.echo('Syntax errors:', err=True)
-        for e, f in sorted(syntax_errors, key=lambda x: x[1]):
-            click.echo(f'  {f}: {e}', err=True)
-
-    if validation_errors:
-        click.echo('Validation errors:', err=True)
-        for e, f in sorted(validation_errors, key=lambda x: x[1]):
-            click.echo(f'  {f}: {e}', err=True)
-
-    sys.exit(1)
 
 
 @main.command(help='Combine source texts and validated summary JSON into JSONL')

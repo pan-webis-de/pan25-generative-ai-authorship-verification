@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import re
-import string
 from functools import partial
 import json
 import logging
