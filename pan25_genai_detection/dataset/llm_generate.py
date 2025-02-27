@@ -178,7 +178,7 @@ def _vertexai_gen_article(article_data, model_name: str, prompt_template: str, *
             # being an invoiced billing customer
             response = model.generate_content(
                 prompt,
-                generation_config=model_args,
+                generation_config={k: v for k, v in model_args.items() if v is not None},
                 safety_settings={h: HarmBlockThreshold.BLOCK_ONLY_HIGH for h in HarmCategory})
             candidates = response.candidates
 
@@ -295,14 +295,12 @@ def openai(prompt_template, input_jsonl, output_dir, outdir_name, api_key, model
 @click.option('-m', '--model-name', default='gemini-pro')
 @click.option('-n', '--outdir-name', help='Output subdirectory name (defaults to model name)')
 @click.option('-p', '--parallelism', default=5)
-@click.option('-t', '--temperature', type=click.FloatRange(0, 1), default=0.6,
+@click.option('-t', '--temperature', type=click.FloatRange(0, 1, min_open=True),
               help='Model temperature')
-@click.option('-x', '--max-output-tokens', type=click.IntRange(0, 1024), default=1024,
+@click.option('-x', '--max-output-tokens', type=click.IntRange(0, min_open=True), default=1000,
               help='Maximum number of output tokens')
-@click.option('-k', '--top-k', type=click.IntRange(1, 40), default=None,
-              help='Top-k sampling')
-@click.option('--top-p', type=click.FloatRange(0, 1), default=0.95,
-              help='Top-p sampling')
+@click.option('-k', '--top-k', type=click.IntRange(1, 40), help='Top-k sampling')
+@click.option('--top-p', type=click.FloatRange(0, 1), help='Top-p sampling')
 def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, parallelism, **kwargs):
     output_dir = Path(output_dir) / (outdir_name if outdir_name else model_name.replace('@', '-').lower())
     output_dir.mkdir(parents=True, exist_ok=True)
