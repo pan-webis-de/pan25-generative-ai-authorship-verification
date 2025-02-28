@@ -38,7 +38,6 @@ from vertexai.preview.generative_models import FinishReason, GenerativeModel, Ha
 
 logger = logging.getLogger(__name__)
 set_start_method('spawn')
-set_seed(42)
 
 _PROMPT_TEMPLATES = [
     'essay',
@@ -96,7 +95,10 @@ def _apply_chat_template(tokenizer, model_type, messages):
 
 def _iter_jsonl_files(in_files):
     for f in in_files:
-        for l in open(f, 'r'):
+        # Shuffle input lines
+        lines = open(f, 'r').readlines()
+        random.shuffle(lines)
+        for l in lines:
             yield f, json.loads(l)
 
 
@@ -132,8 +134,6 @@ def _map_records_to_files(infile_and_record, *args, fn, out_dir: Path, skip_exis
 
 # noinspection PyStatementEffect
 def _generate_articles(input_files, gen_fn, parallelism=1):
-    # Shuffle input files to generate a good sample if we don't finish all generations
-    random.shuffle(input_files)
     it = _iter_jsonl_files(input_files)
     it = ((Path(f), a) for f, a in it)
 
@@ -277,7 +277,9 @@ def main():
               help='File containing OpenAI API key (if not given, OPENAI_API_KEY env var must be set)')
 @click.option('-m', '--model-name', default='gpt-4o')
 @click.option('-p', '--parallelism', default=5)
-def openai(prompt_template, input_jsonl, output_dir, outdir_name, api_key, model_name, parallelism):
+@click.option('--seed', type=int, default=42, help='Random seed')
+def openai(prompt_template, input_jsonl, output_dir, outdir_name, api_key, model_name, parallelism, seed):
+    set_seed(seed)
     if not api_key and not os.environ.get('OPENAI_API_KEY'):
         raise click.UsageError('Need one of --api-key or OPENAI_API_KEY!')
 
@@ -310,7 +312,9 @@ def openai(prompt_template, input_jsonl, output_dir, outdir_name, api_key, model
               help='Maximum number of output tokens')
 @click.option('-k', '--top-k', type=click.IntRange(1, 40), help='Top-k sampling')
 @click.option('--top-p', type=click.FloatRange(0, 1), help='Top-p sampling')
-def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, parallelism, **kwargs):
+@click.option('--seed', type=int, default=42, help='Random seed')
+def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, parallelism, seed, **kwargs):
+    set_seed(seed)
     output_dir = Path(output_dir) / (outdir_name if outdir_name else model_name.replace('@', '-').lower())
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -361,10 +365,11 @@ def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, 
 @click.option('-b', '--better-transformer', is_flag=True, help='Use BetterTransformer')
 @click.option('-q', '--quantization', type=click.Choice(['4', '8']))
 @click.option('--trust-remote-code', is_flag=True, help='Trust remote code')
+@click.option('--seed', type=int, default=42, help='Random seed')
 def huggingface_chat(model_name, prompt_template, input_jsonl, output_dir, outdir_name, device, quantization,
                      min_length, max_new_tokens, top_k, top_p, penalty_alpha, decay_start, decay_factor,
-                     strip_thinking, cot_factor, better_transformer, flash_attn, trust_remote_code, **kwargs):
-
+                     strip_thinking, cot_factor, better_transformer, flash_attn, trust_remote_code, seed, **kwargs):
+    set_seed(seed)
     model_name_out = model_name
     model_args = {
         'torch_dtype': torch.bfloat16
