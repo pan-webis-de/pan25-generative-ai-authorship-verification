@@ -29,7 +29,7 @@ from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
-_SUM_TEMPLATES = ['news', 'essay', 'essay_obfs', 'essay_obfs_neighborhood', 'fiction_cont']
+_SUM_TEMPLATES = ['news', 'essay', 'essay_obfs_neighborhood', 'fiction_cont']
 
 
 @click.group(context_settings={'show_default': True})
