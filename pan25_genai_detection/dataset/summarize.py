@@ -91,7 +91,7 @@ def summarize(prompt_template, input_dir, output_dir, api_key, assistant_name, m
         loader=jinja2.PackageLoader('pan25_genai_detection.dataset', 'prompt_templates')
     )
     template = env.get_template(f'sum_{prompt_template}.jinja2')
-    input_dir = Path(input_dir)
+    input_dir = Path(input_dir).resolve()
     in_files = list(input_dir.rglob(input_glob))
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -153,8 +153,8 @@ def validate(input_file, schema):
 @click.option('-p', '--id-prefix', help='Prefix to add to text IDs (default: TEXT_DIR)')
 @click.option('-g', '--summary-glob', default='**/*.json', help='Summary JSON file glob')
 def combine(sum_dir, text_dir, output_file, id_prefix, summary_glob):
-    sum_dir = Path(sum_dir)
-    text_dir = Path(text_dir)
+    sum_dir = Path(sum_dir).resolve()
+    text_dir = Path(text_dir).resolve()
     if not output_file:
         output_file = os.path.join('data', 'summaries', text_dir.name + '.jsonl')
     output_file = Path(output_file)
@@ -163,11 +163,11 @@ def combine(sum_dir, text_dir, output_file, id_prefix, summary_glob):
         id_prefix = text_dir.name
 
     with open(output_file, 'w') as out:
-        for s in tqdm(list(sum_dir.rglob(summary_glob)), desc='Combining texts and summaries'):
+        for s in tqdm(list(sum_dir.rglob(summary_glob)), desc='Combining texts and summaries', leave=False):
             s_rel = s.relative_to(sum_dir)
             t = text_dir / s_rel.with_suffix('.txt')
             text_id = '/'.join([id_prefix, str(s_rel.with_suffix('').as_posix())])
-            article_data = {
+            record_data = {
                 'id': text_id,
                 'text': t.read_text().strip() if t.exists() else None,
                 'summary': json.load(open(s, 'r'))
@@ -176,10 +176,45 @@ def combine(sum_dir, text_dir, output_file, id_prefix, summary_glob):
                 list(t.parent.glob(t.stem + '.json')) or \
                 list(t.parent.glob(t.stem.rsplit('_', 1)[0] + '.json'))
             if meta_glob:
-                article_data['meta'] = json.loads(meta_glob[0].read_text())
+                record_data['meta'] = json.loads(meta_glob[0].read_text())
 
-            json.dump(article_data, out, ensure_ascii=False)
+            json.dump(record_data, out, ensure_ascii=False)
             out.write('\n')
+
+
+@main.command(help='Convert LLM text output folder to single JSONL file')
+@click.argument('text_dir', type=click.Path(exists=True, file_okay=False), nargs=-1)
+@click.option('-m', '--model-name', help='Model name (default: TEXT_DIR parent)')
+@click.option('-o', '--output-file', type=click.Path(dir_okay=False, exists=False),
+              help='Output file(s) (default: data/text-llm/MODEL_NAME-TEXT_DIR.jsonl', multiple=True)
+@click.option('-p', '--id-prefix', help='Prefix to add to text IDs (default: MODEL_NAME)')
+@click.option('-g', '--text-glob', default='**/*.txt', help='Summary text file glob')
+def text2jsonl(text_dir, model_name, output_file, id_prefix, text_glob):
+    if not output_file:
+        output_file = [''] * len(text_dir)
+    elif len(output_file) != len(text_dir):
+        raise click.UsageError('Number of --output-file options must match number of TEXT_DIR')
+
+    for i, t in tqdm(enumerate(text_dir), desc='Processing input dirs'):
+        t = Path(t).resolve()
+        if not model_name:
+            model_name = t.parent.name
+        if not output_file[i]:
+            output_file[i] = os.path.join('data', 'text-llm', f'{model_name}-{t.name}.jsonl')
+        opath = Path(output_file[i])
+        opath.parent.mkdir(parents=True, exist_ok=True)
+        if not id_prefix:
+            id_prefix = model_name
+
+        with open(opath, 'w') as out:
+            for f in tqdm(t.rglob(text_glob), desc='Converting text dir into JSONL', leave=False):
+                record_data = {
+                    'id': os.path.join(id_prefix, f.resolve().relative_to(t.parent).with_suffix('').as_posix()),
+                    'text': f.read_text().strip(),
+                    'model': model_name
+                }
+                json.dump(record_data, out, ensure_ascii=False)
+                out.write('\n')
 
 
 if __name__ == "__main__":
