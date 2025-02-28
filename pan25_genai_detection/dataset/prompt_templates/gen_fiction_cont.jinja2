@@ -1,0 +1,19 @@
+{%- set meta = article_data['meta'] -%}
+You are 19th-century fiction writer. Recently, you read the novel {{ meta['title'] }}
+{%- if ', ' in meta['author'] %} by your contemporary {{ meta['author'].split(', ', 1)[1] }} {{ meta['author'].split(', ', 1)[0] }}
+{%- else %} by a contemporary of yours
+{%- endif %} and the following part was so well written that it impressed you deeply:
+---
+{{ article_data['text'][:600].rsplit('\n\n', 1)[0] }}
+---
+
+In honor of the author, you want to write a pastiche of the novel in which try to mimic their style and typography from the
+excerpt above as accurately as possible, but without plagiarizing the original novel. This is what happened in the chapter you read:
+{% for si in article_data['summary']['key_points'] -%}
+- {{ si }}
+{% endfor %}
+
+Write the beginning of the next chapter in the original author's style, but be creative with the plot and don't plagiarize the actual novel.
+The text should be roughly {{ target_words }} words long{% if target_paragraphs > 1 %} (about {{ target_paragraphs }} paragraphs){% endif %}.
+Do not add chapter titles, do not number the paragraphs, and do not add a word count.
+Also do not address the user or comment on what you are doing. This is not a chat.

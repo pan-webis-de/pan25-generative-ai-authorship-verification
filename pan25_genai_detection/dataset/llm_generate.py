@@ -39,7 +39,13 @@ logger = logging.getLogger(__name__)
 set_start_method('spawn')
 set_seed(42)
 
-_PROMPT_TEMPLATES = ['essay', 'essay_obfs_neighborhood', 'news_article', 'news_article_short', 'kaggle_paraphrase']
+_PROMPT_TEMPLATES = [
+    'essay',
+    'essay_obfs_neighborhood',
+    'fiction_cont',
+    'news_article',
+    'news_article_short',
+    'kaggle_paraphrase']
 
 
 def _generate_instruction_prompt(article_data, template_name):
@@ -151,7 +157,7 @@ def _openai_gen_article(article_data, client: OpenAI, model_name: str, prompt_te
     response = client.chat.completions.create(
         model=model_name,
         messages=[
-            {'role': 'system', 'content': _generate_instruction_prompt(article_data, prompt_template)}
+            {'role': 'user', 'content': _generate_instruction_prompt(article_data, prompt_template)}
         ]
     )
     return _clean_text_quirks(response.choices[0].message.content)

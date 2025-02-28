@@ -148,28 +148,36 @@ def validate(input_file, schema):
 @main.command(help='Combine source texts and validated summary JSON into JSONL')
 @click.argument('sum_dir', type=click.Path(exists=True, file_okay=False))
 @click.argument('text_dir', type=click.Path(exists=True, file_okay=False))
-@click.option('-o', '--output-file', type=click.Path(dir_okay=False, exists=False), help='Output file',
-              default=os.path.join('data', 'summaries', 'combined.jsonl'))
-@click.option('-p', '--id-prefix', help='Prefix to add to text IDs')
+@click.option('-o', '--output-file', type=click.Path(dir_okay=False, exists=False),
+              help='Output file (default: data/summaries/TEXT_DIR.jsonl')
+@click.option('-p', '--id-prefix', help='Prefix to add to text IDs (default: TEXT_DIR)')
 @click.option('-g', '--summary-glob', default='**/*.json', help='Summary JSON file glob')
 def combine(sum_dir, text_dir, output_file, id_prefix, summary_glob):
     sum_dir = Path(sum_dir)
     text_dir = Path(text_dir)
+    if not output_file:
+        output_file = os.path.join('data', 'summaries', text_dir.name + '.jsonl')
     output_file = Path(output_file)
     output_file.parent.mkdir(parents=True, exist_ok=True)
+    if not id_prefix:
+        id_prefix = text_dir.name
 
     with open(output_file, 'w') as out:
         for s in tqdm(list(sum_dir.rglob(summary_glob)), desc='Combining texts and summaries'):
             s_rel = s.relative_to(sum_dir)
             t = text_dir / s_rel.with_suffix('.txt')
-            text_id = str(s_rel.with_suffix(''))
-            if id_prefix:
-                text_id = os.path.join(id_prefix, text_id)
+            text_id = '/'.join([id_prefix, str(s_rel.with_suffix('').as_posix())])
             article_data = {
                 'id': text_id,
                 'text': t.read_text().strip() if t.exists() else None,
                 'summary': json.load(open(s, 'r'))
             }
+            meta_glob = \
+                list(t.parent.glob(t.stem + '.json')) or \
+                list(t.parent.glob(t.stem.rsplit('_', 1)[0] + '.json'))
+            if meta_glob:
+                article_data['meta'] = json.loads(meta_glob[0].read_text())
+
             json.dump(article_data, out, ensure_ascii=False)
             out.write('\n')
 
