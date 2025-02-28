@@ -19,6 +19,7 @@ import logging
 from multiprocessing import pool, set_start_method
 import os
 from pathlib import Path
+import random
 
 import backoff
 import click
@@ -130,6 +131,8 @@ def _map_records_to_files(infile_and_record, *args, fn, out_dir: Path, skip_exis
 
 # noinspection PyStatementEffect
 def _generate_articles(input_files, gen_fn, parallelism=1):
+    # Shuffle input files to generate a good sample if we don't finish all generations
+    random.shuffle(input_files)
     it = _iter_jsonl_files(input_files)
     it = ((Path(f), a) for f, a in it)
 
