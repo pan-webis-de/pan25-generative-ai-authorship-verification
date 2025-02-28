@@ -46,7 +46,8 @@ _PROMPT_TEMPLATES = [
     'fiction_cont',
     'news_article',
     'news_article_short',
-    'kaggle_paraphrase']
+    'kaggle_paraphrase'
+]
 
 
 def _generate_instruction_prompt(article_data, template_name):
@@ -55,7 +56,7 @@ def _generate_instruction_prompt(article_data, template_name):
     """
 
     target_paragraphs = article_data['text'].count('\n\n')
-    target_words = round(int(len(re.split(r'\s+', article_data['text']))) + 9, -1)
+    target_words = round(int(len(re.split(r'\s+', article_data['text'])) * .96) + 9, -1)
 
     env = jinja2.Environment(
         loader=jinja2.PackageLoader('pan25_genai_detection.dataset', 'prompt_templates')
