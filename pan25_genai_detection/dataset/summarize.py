@@ -18,10 +18,12 @@ import logging
 from multiprocessing import pool
 import os
 from pathlib import Path
+import sys
 
 import backoff
 import click
 import jinja2
+import jsonschema
 from openai import OpenAI, OpenAIError
 from tqdm import tqdm
 
@@ -105,6 +107,42 @@ def summarize(prompt_template, input_dir, output_dir, api_key, assistant_name, m
     with pool.ThreadPool(processes=parallelism) as p:
         # noinspection PyStatementEffect
         [_ for _ in tqdm(p.imap(fn, in_out_files), desc='Generating summaries', unit='sum')]
+
+
+@main.command(help='Validate LLM-generated JSON summary files', context_settings={'show_default': True})
+@click.argument('schema', type=click.Choice(_SUM_TEMPLATES))
+@click.argument('input_file', type=click.Path(dir_okay=False, exists=True), nargs=-1)
+def validate(input_file, schema):
+    if not input_file:
+        raise click.UsageError('No input file specified')
+
+    syntax_errors = []
+    validation_errors = []
+    schema = json.load(open(Path(__file__).parent / 'summary_schemas' / f'{schema}.json', 'r'))
+
+    for fname in tqdm(input_file, desc='Validating JSON files', unit='files'):
+        try:
+            jsonschema.validate(instance=json.load(open(fname, 'r')), schema=schema)
+        except json.JSONDecodeError as e:
+            syntax_errors.append((e.msg, fname))
+        except jsonschema.ValidationError as e:
+            validation_errors.append((e.message, fname))
+
+    if not syntax_errors and not validation_errors:
+        click.echo('No errors.', err=True)
+        sys.exit(0)
+
+    if syntax_errors:
+        click.echo('Syntax errors:', err=True)
+        for e, f in sorted(syntax_errors, key=lambda x: x[1]):
+            click.echo(f'  {f}: {e}', err=True)
+
+    if validation_errors:
+        click.echo('Validation errors:', err=True)
+        for e, f in sorted(validation_errors, key=lambda x: x[1]):
+            click.echo(f'  {f}: {e}', err=True)
+
+    sys.exit(1)
 
 
 @main.command(help='Combine source texts and validated summary JSON into JSONL')
