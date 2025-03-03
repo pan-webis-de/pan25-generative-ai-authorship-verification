@@ -215,7 +215,7 @@ def _vertexai_gen_article(article_data, model_name: str, prompt_template: str, *
                 prompt = prompt.replace('sex', '&&&')
                 prompt += '\nPhrase your response in a non-harmful way suitable for the general public.'
                 sex_censored = True
-            model_args['temperature'] = min(1.0, model_args.get('temperature', 0.5) + 0.1)
+            model_args['temperature'] = min(1.0, (model_args.get('temperature') or 0.5) + 0.1)
             continue
 
         # Success
