@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Copyright 2025 Janek Bevendorff, Webis
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# shellcheck disable=SC2046
+dataset-sample sample-balanced \
+    -h data/summaries/pan25-gutenberg-19c-fiction.jsonl \
+    $(for m in data/text-llm-jsonl/gutenberg-19c-fiction/*; do echo "-m $m"; done | grep -v o1) \
+    --scramble-ids \
+    --genre fiction \
+    --output-file data/sampled/gutenberg-19c-fiction.jsonl \
+    --max-imbalance 1
+
+dataset-sample sample-balanced \
+    -h data/summaries/pan25-riddell-juola.jsonl \
+    $(for m in data/text-llm-jsonl/riddell-juola/*; do echo "-m $m"; done | grep -v o1) \
+    --scramble-ids \
+    --genre essays \
+    --output-file data/sampled/riddell-juola.jsonl \
+    --max-imbalance 4
+
+dataset-sample sample-balanced \
+    -h data/summaries/pan25-brennan-greenstadt.jsonl \
+    $(for m in data/text-llm-jsonl/brennan-greenstadt/*; do echo "-m $m"; done | grep -v o1) \
+    --scramble-ids \
+    --genre essays \
+    --output-file data/sampled/brennan-greenstadt.jsonl \
+    --max-imbalance 4
+
+dataset-sample sample-balanced \
+    -h data/summaries/pan24-train-human.jsonl \
+    $(for m in data/text-llm-jsonl/pan24-train/*; do echo "-m $m"; done | grep -v o1) \
+    --scramble-ids \
+    --genre news \
+    --output-file data/sampled/pan24.jsonl \
+    --max-imbalance 4

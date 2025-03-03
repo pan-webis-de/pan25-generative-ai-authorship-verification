@@ -41,6 +41,7 @@ def _scan_jsonl_ids(file, min_text_length=400, shuffle=True):
         random.shuffle(ids)
     return ids
 
+
 @main.command(help='Convert folder of PAN\'24 texts to PAN\'25 folder structure')
 @click.argument('test_ids', type=click.Path(dir_okay=False, exists=True))
 @click.argument('human_dir', type=click.Path(file_okay=False, exists=True))
@@ -117,7 +118,11 @@ def _fixup_midsentence_end(text):
         return text
 
     # Otherwise discard last paragraph if it isn't too long
-    t1, t2 = text.strip().rsplit('\n\n', 1)
+    try:
+        t1, t2 = text.strip().rsplit('\n\n', 1)
+    except ValueError:
+        return text
+
     if len(t2) < 500 and len(t1) > len(t2) * 3:
         return t1
 
@@ -145,8 +150,8 @@ def _fixup_midsentence_end(text):
 @click.option('--no-end-fixup', is_flag=True, help='Don\'t fixup generations ending mid-sentence')
 @click.option('--genre', help='Optional genre key to add to all texts')
 @click.option('--seed', type=int, default=42, help='Random seed')
-def sample_balanced(human, machine, output_file, scramble_ids, id_salt, max_imbalance, min_length,
-                    no_end_fixup, genre, seed):
+def sample_balanced(human, machine, output_file, scramble_ids, id_salt, max_imbalance,
+                    min_length, no_end_fixup, genre, seed):
     random.seed(seed)
 
     if not human or not machine:
@@ -218,4 +223,54 @@ def sample_balanced(human, machine, output_file, scramble_ids, id_salt, max_imba
     if id_file:
         id_file.close()
 
-    click.echo(f'Output written to {output_file}. Don\'t forget to shuffle lines before distribution.')
+    click.echo(f'Output written to {output_file}.')
+
+
+@main.command(help='Create train, test, and validation splits from pre-sampled JSONL files')
+@click.argument('input_file', type=click.Path(dir_okay=False, exists=True), nargs=-1)
+@click.option('-o', '--output-dir', type=click.Path(file_okay=False, exists=False),
+              help='Output directory', default=os.path.join('data', 'splits'))
+@click.option('-v', '--val-size', type=click.FloatRange(0, 1, max_open=True),
+              default=.1, help='Validation split size')
+@click.option('-t', '--test-size', type=click.FloatRange(0, 1, max_open=True),
+              default=.2, help='Test split size')
+@click.option('--seed', type=int, default=42, help='Random seed')
+def split(input_file, output_dir, val_size, test_size, seed):
+    random.seed(seed)
+
+    if val_size + test_size > 1.0:
+        click.UsageError('Validation + test size cannot be more than 100% of dataset.')
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    def _dump_jsonl(lines, file_path, allowed_fields):
+        with open(file_path, 'w') as f:
+            for l in lines:
+                j = json.loads(l)
+                json.dump({k: v for k, v in j.items() if k in allowed_fields}, f, ensure_ascii=False)
+                f.write('\n')
+
+    input_file = sorted(input_file)
+    allowed_fields = ['id', 'model', 'label', 'genre', 'text']
+    allowed_fields_test = ['id', 'text']
+    for f in tqdm(input_file, desc='Creating splits from input files'):
+        f = Path(f)
+        with open(f) as f_:
+            lines = [l for l in f_.readlines() if l.strip()]
+        random.shuffle(lines)
+        val_size = int(len(lines) * val_size)
+        test_size = int(len(lines) * test_size)
+
+        if val_size > 0:
+            val_out = output_dir / (f.stem + '-val.jsonl')
+            _dump_jsonl(lines[:val_size], val_out, allowed_fields)
+
+        if test_size > 0:
+            test_out = output_dir / (f.stem + '-test.jsonl')
+            truth_out = output_dir / (f.stem + '-test-truth.jsonl')
+            _dump_jsonl(lines[val_size:val_size + test_size], test_out, allowed_fields_test)
+            _dump_jsonl(lines[val_size:val_size + test_size], truth_out, allowed_fields)
+
+        train_out = output_dir / (f.stem + '-train.jsonl')
+        _dump_jsonl(lines[val_size + test_size:], train_out, allowed_fields)
