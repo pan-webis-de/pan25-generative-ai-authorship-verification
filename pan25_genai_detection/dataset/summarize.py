@@ -182,40 +182,5 @@ def combine(sum_dir, text_dir, output_file, id_prefix, summary_glob):
             out.write('\n')
 
 
-@main.command(help='Convert LLM text output folder to single JSONL file')
-@click.argument('text_dir', type=click.Path(exists=True, file_okay=False), nargs=-1)
-@click.option('-m', '--model-name', help='Model name (default: TEXT_DIR parent)')
-@click.option('-o', '--output-file', type=click.Path(dir_okay=False, exists=False),
-              help='Output file(s) (default: data/text-llm/MODEL_NAME-TEXT_DIR.jsonl', multiple=True)
-@click.option('-p', '--id-prefix', help='Prefix to add to text IDs (default: MODEL_NAME)')
-@click.option('-g', '--text-glob', default='**/*.txt', help='Summary text file glob')
-def text2jsonl(text_dir, model_name, output_file, id_prefix, text_glob):
-    if not output_file:
-        output_file = [''] * len(text_dir)
-    elif len(output_file) != len(text_dir):
-        raise click.UsageError('Number of --output-file options must match number of TEXT_DIR')
-
-    for i, t in tqdm(enumerate(text_dir), desc='Processing input dirs'):
-        t = Path(t).resolve()
-        if not model_name:
-            model_name = t.parent.name
-        if not output_file[i]:
-            output_file[i] = os.path.join('data', 'text-llm', f'{model_name}-{t.name}.jsonl')
-        opath = Path(output_file[i])
-        opath.parent.mkdir(parents=True, exist_ok=True)
-        if not id_prefix:
-            id_prefix = model_name
-
-        with open(opath, 'w') as out:
-            for f in tqdm(t.rglob(text_glob), desc='Converting text dir into JSONL', leave=False):
-                record_data = {
-                    'id': os.path.join(id_prefix, f.resolve().relative_to(t.parent).with_suffix('').as_posix()),
-                    'text': f.read_text().strip(),
-                    'model': model_name
-                }
-                json.dump(record_data, out, ensure_ascii=False)
-                out.write('\n')
-
-
 if __name__ == "__main__":
     main()
