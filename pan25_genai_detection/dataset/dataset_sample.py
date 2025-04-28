@@ -244,16 +244,20 @@ def split(input_file, output_dir, val_size, test_size, seed):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    def _dump_jsonl(lines, file_path, allowed_fields):
+    def _dump_jsonl(lines, file_path, allowed_fields=None, add_fields=None):
         with open(file_path, 'w') as f:
             for l in lines:
-                j = json.loads(l)
-                json.dump({k: v for k, v in j.items() if k in allowed_fields}, f, ensure_ascii=False)
+                j = json.loads(l) if type(l) is str else l.copy()
+                if add_fields:
+                    j.update(add_fields)
+                json.dump({k: v for k, v in j.items() if not allowed_fields or k in allowed_fields}, f,
+                          ensure_ascii=False)
                 f.write('\n')
 
     input_file = sorted(input_file)
     allowed_fields = ['id', 'model', 'label', 'genre', 'text']
     allowed_fields_test = ['id', 'text']
+    allowed_fields_truth = ['id', 'model', 'genre', 'source', 'label']
     for f in tqdm(input_file, desc='Creating splits from input files'):
         f = Path(f)
         with open(f) as f_:
@@ -270,7 +274,8 @@ def split(input_file, output_dir, val_size, test_size, seed):
             test_out = output_dir / (f.stem + '-test.jsonl')
             truth_out = output_dir / (f.stem + '-test-truth.jsonl')
             _dump_jsonl(lines[val_size:val_size + test_size], test_out, allowed_fields_test)
-            _dump_jsonl(lines[val_size:val_size + test_size], truth_out, allowed_fields)
+            _dump_jsonl(lines[val_size:val_size + test_size], truth_out, allowed_fields_truth,
+                        add_fields={'source': f.stem})
 
         train_out = output_dir / (f.stem + '-train.jsonl')
         _dump_jsonl(lines[val_size + test_size:], train_out, allowed_fields)

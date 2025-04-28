@@ -18,6 +18,7 @@ dataset-sample split data/sampled/riddell-juola.jsonl -v .1 -t .2
 dataset-sample split data/sampled/brennan-greenstadt.jsonl -v .1 -t .2
 dataset-sample split data/sampled/gutenberg-19c-fiction.jsonl -v .1 -t .1
 
-cat data/splits/*-train.jsonl > data/splits/train.jsonl
-cat data/splits/*-val.jsonl > data/splits/val.jsonl
-cat data/splits/*-test.jsonl > data/splits/test.jsonl
+cat data/splits/*-train.jsonl | shuf --random-source=<(yes 42) > data/splits/train.jsonl
+cat data/splits/*-val.jsonl | shuf --random-source=<(yes 42) > data/splits/val.jsonl
+cat data/splits/*-test.jsonl | shuf --random-source=<(yes 42) > data/splits/test.jsonl
+cat data/splits/*-test-truth.jsonl | shuf --random-source=<(yes 42) > data/splits/test-truth.jsonl
