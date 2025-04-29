@@ -74,7 +74,7 @@ def binoculars(input_file, output_directory, outfile_name, quantize, flash_attn,
         observer_name_or_path=observer,
         performer_name_or_path=performer,
         quantization_bits=quantize,
-        use_flash_attn=flash_attn,
+        flash_attn=flash_attn,
         device1=device1,
         device2=device2)
     detect(detector, input_file, output_directory, outfile_name)
