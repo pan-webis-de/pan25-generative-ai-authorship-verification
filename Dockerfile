@@ -15,7 +15,7 @@ RUN --mount=type=cache,target=/root/.cache set -x \
     && python3 -m pip install poetry packaging setuptools \
     && python3 -m poetry config virtualenvs.create false \
     && python3 -m poetry install --no-root \
-    && MAX_JOBS=$(nproc) python3 -m pip install --no-build-isolation flash-attn
+    && MAX_JOBS=$(nproc) python3 -m pip install --no-cache --no-build-isolation flash-attn
 
 COPY . /opt/pan25-generative-ai-detection/
 
