@@ -93,6 +93,7 @@ class Binoculars(DetectorBase):
             torch.cuda.synchronize()
         return observer_logits, performer_logits
 
+    @torch.inference_mode()
     def _normalize_scores(self, scores):
         # Apply trained offset
         scores += self.PAN25_ACCURACY_OFFSET
