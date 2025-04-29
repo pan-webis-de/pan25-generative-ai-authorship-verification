@@ -3,7 +3,6 @@ from pathlib import Path
 
 import click
 import numpy as np
-import pandas as pd
 from sklearn.metrics import confusion_matrix, roc_auc_score, f1_score, brier_score_loss
 from tira.evaluators import to_prototext
 
