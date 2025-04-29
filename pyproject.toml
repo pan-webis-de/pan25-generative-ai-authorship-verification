@@ -32,12 +32,16 @@ matplotlib = "^3.10.0"
 seaborn = "^0.13.2"
 optimum = "^1.24.0"
 more-itertools = "^10.6.0"
+pyppmd = "^1.1.1"
+scikit-learn = "^1.6.1"
 
 [tool.poetry.scripts]
 summarize = 'pan25_genai_detection.dataset.summarize:main'
 news-source = 'pan25_genai_detection.dataset.news_source:main'
 llm-generate = 'pan25_genai_detection.dataset.llm_generate:main'
 dataset-sample = 'pan25_genai_detection.dataset.dataset_sample:main'
+pan25-baseline = 'pan25_genai_detection.baselines.cli:main'
+pan25-evaluator = 'pan25_genai_detection.evaluator.evaluator:main'
 
 [build-system]
 requires = ["poetry-core"]
