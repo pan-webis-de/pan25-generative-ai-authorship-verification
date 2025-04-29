@@ -161,7 +161,7 @@ def confusion(y_true, y_pred):
     ----------
     Confusion matrix as array.
     """
-    return confusion_matrix(y_true, y_pred >= 0.5, labels=[0, 1]).tolist()
+    return confusion_matrix(y_true, y_pred > 0.5, labels=[0, 1]).tolist()
 
 
 def load_problem_file(file_obj):
