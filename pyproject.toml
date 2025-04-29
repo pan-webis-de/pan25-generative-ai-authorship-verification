@@ -17,7 +17,7 @@ betterproto = {extras = ["compiler"], version = "^1.2.5"}
 pandas = "^2.2.0"
 numpy = "^2.2.3"
 transformers = "^4.49.0"
-torch = "^2.6.0"
+torch = "<2.7.0"        # 2.7.0 incompatible with flash-attn https://github.com/Dao-AILab/flash-attention/issues/1622
 openai = "^1.64.0"
 jsonschema = "^4.23.0"
 markdown = "^3.7.0"
@@ -34,6 +34,7 @@ optimum = "^1.24.0"
 more-itertools = "^10.6.0"
 pyppmd = "^1.1.1"
 scikit-learn = "^1.6.1"
+tira = "^0.0.160"
 
 [tool.poetry.scripts]
 summarize = 'pan25_genai_detection.dataset.summarize:main'

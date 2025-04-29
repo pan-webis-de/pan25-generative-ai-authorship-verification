@@ -27,7 +27,7 @@ def main():
     pass
 
 
-def detect(detector, input_file, output_directory, outfile_name):
+def detect(detector, input_file, output_directory, outfile_name, c_at_1_threshold=0.01):
     """
     Run a detector on an input file and write results to output directory.
 
@@ -35,12 +35,15 @@ def detect(detector, input_file, output_directory, outfile_name):
     :param input_file: input file object
     :param output_directory: output directory path
     :param outfile_name: output filename
-    :param comp_fn: function to compare scores
+    :param c_at_1_threshold: c@1 optimization threshold
     """
     with open(os.path.join(output_directory, outfile_name), 'w') as out:
-        for l in tqdm(input_file, desc='Predicting pairs', unit=' pairs'):
+        for l in tqdm(input_file, desc='Predicting texts', unit=' texts'):
             j = json.loads(l)
             score = detector.get_score(j['text'], normalize=True)
+            if abs(score - .5) < c_at_1_threshold:
+                # Optimize c@1
+                score = 0.5
             json.dump({'id': j['id'], 'label': float(score)}, out)
             out.write('\n')
             out.flush()
@@ -54,10 +57,9 @@ def detect(detector, input_file, output_directory, outfile_name):
 @click.option('-f', '--flash-attn', is_flag=True, help='Use flash-attn 2 (requires Ampere GPU)')
 @click.option('--observer', help='Observer model', default='tiiuae/falcon-7b', show_default=True)
 @click.option('--performer', help='Performer model', default='tiiuae/falcon-7b-instruct', show_default=True)
-@click.option('--device1', help='Observer model device', default='auto', show_default=True)
-@click.option('--device2', help='Performer model device', default='auto', show_default=True)
+@click.option('--device', help='GPU device', default='auto', show_default=True)
 def binoculars(input_file, output_directory, outfile_name, quantize, flash_attn,
-               observer, performer, device1, device2):
+               observer, performer, device):
     """
     PAN'25 baseline: Binoculars.
 
@@ -75,8 +77,7 @@ def binoculars(input_file, output_directory, outfile_name, quantize, flash_attn,
         performer_name_or_path=performer,
         quantization_bits=quantize,
         flash_attn=flash_attn,
-        device1=device1,
-        device2=device2)
+        device=device)
     detect(detector, input_file, output_directory, outfile_name)
 
 
@@ -114,7 +115,7 @@ def tfidf(input_file, output_directory, outfile_name):
 
     from pan25_genai_detection.baselines.tfidf import TfidfDetector
     detector = TfidfDetector()
-    detect(detector, input_file, output_directory, outfile_name)
+    detect(detector, input_file, output_directory, outfile_name, c_at_1_threshold=0.05)
 
 
 if __name__ == '__main__':

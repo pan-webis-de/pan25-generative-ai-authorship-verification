@@ -44,9 +44,6 @@ class PPMdDetector(DetectorBase):
         # Scale and normalize
         scores = 10. * (scores - .5)
         scores = 1. / (1. + np.exp(-scores))
-
-        # Optimise c@1
-        scores[np.abs(scores - .5) < .01] = 0.5
         return scores
 
     def _get_score_impl(self, text: t.Iterable[str]) -> np.ndarray:
@@ -58,10 +55,3 @@ class PPMdDetector(DetectorBase):
             score = (cx + cy - cxy) / np.sqrt(cx * cy)
             scores.append(score)
         return np.array(scores)
-
-    def _predict_impl(self, text: t.Iterable[str]):
-        return self._normalize_scores(self._get_score_impl(text)) >= 0.5
-
-    def _predict_with_score_impl(self, text: t.Iterable[str]) -> t.Tuple[np.ndarray, np.ndarray]:
-        s = self._get_score_impl(text)
-        return s, self._normalize_scores(s) >= 0.5

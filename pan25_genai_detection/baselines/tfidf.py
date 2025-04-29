@@ -34,20 +34,11 @@ class TfidfDetector(DetectorBase):
     _BASEDIR = Path(__file__).parent
 
     def _normalize_scores(self, scores):
-        # Optimise c@1
-        scores[np.abs(scores - .5) < .05] = 0.5
         return scores
 
     def _get_score_impl(self, text: t.Iterable[str]) -> np.ndarray:
         clf, vec = pickle.load((self._BASEDIR / 'tfidf_model.pkl').open('rb'))
         return clf._predict_proba_lr(vec.transform(text))[:, 1]
-
-    def _predict_impl(self, text: t.Iterable[str]):
-        return self._normalize_scores(self._get_score_impl(text)) >= 0.5
-
-    def _predict_with_score_impl(self, text: t.Iterable[str]) -> t.Tuple[np.ndarray, np.ndarray]:
-        s = self._get_score_impl(text)
-        return s, self._normalize_scores(s) >= 0.5
 
     @classmethod
     def train(cls, jsonl_path):

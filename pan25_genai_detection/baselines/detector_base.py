@@ -38,7 +38,7 @@ class DetectorBase:
         :param scores: unnormalized input scores
         :return: normalized output scores
         """
-        return scores
+        return NotImplemented
 
     def _get_score_impl(self, text: t.Iterable[str]) -> t.Union[torch.Tensor, np.ndarray, t.Iterable[float]]:
         """
@@ -72,8 +72,16 @@ class DetectorBase:
     def _predict_impl(self, text: t.Iterable[str]) -> t.Union[torch.Tensor, np.ndarray, t.Iterable[bool]]:
         """
         Prediction implementation. To be overridden.
-        The function should return a list of bools, a Torch tensor, or a Numpy array.
+
+        If :meth:`_normalize_scores` is implemented, the default behaviour is to call
+        :meth:`_get_score_impl` and threshold the value with ``0.5``. Otherwise, the return
+        value is :class:``NotImplemented``.
+
+        Overrides should return a Torch tensor or a Numpy array.
         """
+        scores = self._get_score_impl(text)
+        if scores is not NotImplemented and (scores := self._normalize_scores(scores)) is not NotImplemented:
+            return _to_numpy(scores) >= 0.5
         return NotImplemented
 
     def predict(self, text: t.Union[str, t.Iterable[str]]) -> t.Union[np.int32, np.ndarray, np.nan]:
@@ -90,14 +98,26 @@ class DetectorBase:
         return preds[0] if return_single else preds
 
     def _predict_with_score_impl(self, text: t.Iterable[str]) -> t.Tuple[
-            t.Union[torch.Tensor, np.ndarray, t.Iterable[bool]],
-            t.Union[torch.Tensor, np.ndarray, t.Iterable[float]]]:
+            t.Union[torch.Tensor, np.ndarray], t.Union[torch.Tensor, np.ndarray]]:
         """
         Predict and score implementation. To be overridden.
-        The default implementation just calls :meth:`predict` and :meth:`get_score`. Subclasses
+
+        If :meth:`_normalize_scores` is implemented, the default implementation will call
+        :meth:`_normalize_scores` and threshold the return value with ``0.5`` for predictions.
+        Otherwise, the default implementation calls :meth:`predict` and :meth:`get_score`. Subclasses
         should implement a more efficient implementation that avoids doing the same calculation twice.
+
+        Overrides should return a Torch tensor or a Numpy array.
         """
-        return self._predict_impl(text), self._get_score_impl(text)
+        scores = self._get_score_impl(text)
+        if scores is NotImplemented:
+            return self._predict_impl(text), NotImplemented
+
+        scores_norm = self._normalize_scores(scores)
+        if scores_norm is NotImplemented:
+            return self._predict_impl(text), scores
+
+        return _to_numpy(scores_norm) >= 0.5, scores
 
     def predict_with_score(self, text: t.Union[str, t.Iterable[str]], normalize: bool = False) -> t.Tuple[
             t.Union[np.int32, np.ndarray, np.nan],
