@@ -17,7 +17,7 @@ betterproto = {extras = ["compiler"], version = "^1.2.5"}
 pandas = "^2.2.0"
 numpy = "^2.2.3"
 transformers = "^4.49.0"
-torch = "<2.7.0"        # 2.7.0 incompatible with flash-attn https://github.com/Dao-AILab/flash-attention/issues/1622
+torch = "~=2.6.0"        # 2.7.0 incompatible with flash-attn https://github.com/Dao-AILab/flash-attention/issues/1622
 openai = "^1.64.0"
 jsonschema = "^4.23.0"
 markdown = "^3.7.0"
