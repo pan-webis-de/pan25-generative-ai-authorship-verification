@@ -161,7 +161,7 @@ def confusion(y_true, y_pred):
     ----------
     Confusion matrix as array.
     """
-    return confusion_matrix(y_true, y_pred > 0.5, labels=[0, 1]).tolist()
+    return confusion_matrix(y_true, y_pred >= 0.5, labels=[0, 1]).tolist()
 
 
 def load_problem_file(file_obj):
@@ -202,7 +202,7 @@ def evaluate_all(y_true, y_pred):
         'f1': f1(y_true, y_pred),
         'f05u': f05u(y_true, y_pred),
     }
-    results['mean'] = np.mean([v or 0.0 for v in results.values()])
+    results['mean'] = float(np.mean([v or 0.0 for v in results.values()]))
 
     for k, v in results.items():
         results[k] = round(v, 3) if v is not None else v
@@ -270,7 +270,6 @@ def main(answer_file, truth_file, output_dir, outfile_name, skip_prototext, skip
     """
     PAN'25 Generative AI Authorship Verification evaluator.
     """
-
     pred = load_problem_file(answer_file)
     truth = load_problem_file(truth_file)
     output_dir = Path(output_dir)
@@ -298,7 +297,7 @@ def main(answer_file, truth_file, output_dir, outfile_name, skip_prototext, skip
     # Write Tira Prototext
     if not skip_prototext:
         with (output_dir / (outfile_name.stem + '.prototext')).open('w') as f:
-            f.write(to_prototext([{k: v} for k, v in results.items() if type(v) in [float, int]]))
+            f.write(to_prototext([{k: v} for k, v in results.items() if type(v) is float]))
 
     # Evaluate test cases for individual sources and add to JSON output
     if not skip_source_eval:
