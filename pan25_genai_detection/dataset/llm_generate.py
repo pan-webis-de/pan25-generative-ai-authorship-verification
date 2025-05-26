@@ -20,6 +20,7 @@ from multiprocessing import pool, set_start_method
 import os
 from pathlib import Path
 import random
+import typing as t
 
 import backoff
 import click
@@ -341,24 +342,17 @@ def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, 
 @click.option('-n', '--outdir-name', help='Output subdirectory name (defaults to model name)')
 @click.option('-d', '--device', type=click.Choice(['auto', 'cuda', 'cpu']), default='auto',
               help='Select device to run model on')
-@click.option('-m', '--min-length', type=click.IntRange(1), default=300,
-              show_default=True, help='Minimum length in tokens')
-@click.option('-x', '--max-new-tokens', type=click.IntRange(1), default=1500,
-              show_default=True, help='Maximum new tokens')
-@click.option('-s', '--decay-start', type=click.IntRange(1), default=1000,
-              show_default=True, help='Length decay penalty start')
-@click.option('--decay-factor', type=click.FloatRange(1), default=1.01,
-              show_default=True, help='Length decay penalty factor')
-@click.option('-k', '--top-k', type=click.IntRange(0), default=0,
-              show_default=True, help='Top-k sampling (0 to disable)')
-@click.option('-p', '--top-p', type=click.FloatRange(0, 1), default=0.9,
-              show_default=True, help='Top-p sampling')
+@click.option('-m', '--min-length', type=click.IntRange(1), default=300, help='Minimum length in tokens')
+@click.option('-x', '--max-new-tokens', type=click.IntRange(1), default=1500, help='Maximum new tokens')
+@click.option('-s', '--decay-start', type=click.IntRange(1), default=1000, help='Length decay penalty start')
+@click.option('--decay-factor', type=click.FloatRange(1), default=1.01, help='Length decay penalty factor')
+@click.option('-k', '--top-k', type=click.IntRange(0), default=0, help='Top-k sampling (0 to disable)')
+@click.option('-p', '--top-p', type=click.FloatRange(0, 1), default=0.9, help='Top-p sampling')
 @click.option('-a', '--penalty-alpha', type=click.FloatRange(0, 1), default=0.0,
-              show_default=True, help='Contrastive search penalty')
+              help='Contrastive search penalty')
 @click.option('-t', '--temperature', type=click.FloatRange(0, min_open=True), default=0.9,
-              show_default=True, help='Model temperature')
-@click.option('-f', '--flash-attn', is_flag=True,
-              help='Use flash-attn 2 (must be installed separately)')
+              help='Model temperature')
+@click.option('-f', '--flash-attn', is_flag=True, help='Use flash-attn 2 (must be installed separately)')
 @click.option('--strip-thinking', is_flag=True, help='Strip CoT output from the beginning')
 @click.option('--cot-factor', type=click.IntRange(1), default=3,
               help='Multiply length limits if --strip-thinking is set')
@@ -371,9 +365,7 @@ def huggingface_chat(model_name, prompt_template, input_jsonl, output_dir, outdi
                      strip_thinking, cot_factor, better_transformer, flash_attn, trust_remote_code, seed, **kwargs):
     set_seed(seed)
     model_name_out = model_name
-    model_args = {
-        'torch_dtype': torch.bfloat16
-    }
+    model_args: t.Dict[str, t.Any] = {'torch_dtype': torch.bfloat16}
     if flash_attn:
         model_args.update({'attn_implementation': 'flash_attention_2'})
     if quantization:
