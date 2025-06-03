@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import random
 from pathlib import Path
 import re
 import typing as t
@@ -106,7 +107,8 @@ def dipper(input_dir, output_dir, model, device_map, lex_diversity, order_divers
     user_prefix = ' '.join(prefix.split())
     input_dir = Path(input_dir)
     input_files = input_dir.rglob('**/*.txt')
-    input_files = list(input_files)
+    input_files = sorted(input_files)
+    random.shuffle(input_files)
     for infile in tqdm(input_files, desc='Paraphrasing texts', unit='t'):
         out_file = Path(output_dir) / infile.relative_to(input_dir.parent.parent)
         if out_file.exists():
