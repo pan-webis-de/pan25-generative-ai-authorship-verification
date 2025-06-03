@@ -1,0 +1,7 @@
+{%- set summary = article_data['summary'] -%}
+Write an argumentative essay about the topic "{{ summary['main_topic'] }}". Write in English, but with Yoda grammar (subject, object, verb).
+The essay should include the following key points:
+{% for kp in summary['key_points'] -%}
+- {{ kp }}
+{% endfor %}
+Don't add a title or author name.

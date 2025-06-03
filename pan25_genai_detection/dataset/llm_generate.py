@@ -42,6 +42,11 @@ set_start_method('spawn')
 
 _PROMPT_TEMPLATES = [
     'essay',
+    'essay_obfs_7yo',
+    'essay_obfs_7yo_no_kp',
+    'essay_obfs_rand_words',
+    'essay_obfs_word_order',
+    'essay_obfs_alliteration',
     'essay_obfs_neighborhood',
     'fiction_cont',
     'news_article',
@@ -104,7 +109,7 @@ def _iter_jsonl_files(in_files):
 
 
 def _map_records_to_files(infile_and_record, *args, fn, out_dir: Path, skip_existing: bool = True,
-                          out_file_suffix: str = '.txt', **kwargs):
+                          out_dir_suffix: str = '', out_file_suffix: str = '.txt', **kwargs):
     """
     Take a tuple of ``(topic name, parsed JSON record)``, apply ``fn`` on the JSON and write its output to
     individual text files based on the record's topic and ID under ``out_dir``.
@@ -113,6 +118,7 @@ def _map_records_to_files(infile_and_record, *args, fn, out_dir: Path, skip_exis
     in_file, record = infile_and_record
     if os.path.sep not in record['id']:
         out_dir /= in_file.stem
+    out_dir = out_dir.parent / (out_dir.name + out_dir_suffix)
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = (out_dir / record['id']).with_suffix(out_file_suffix)
 
@@ -274,12 +280,13 @@ def main():
 @click.option('-o', '--output-dir', type=click.Path(file_okay=False), help='Output directory',
               default=os.path.join('data', 'text-llm'))
 @click.option('-n', '--outdir-name', help='Output subdirectory name (defaults to model name)')
+@click.option('-s', '--outdir-suffix', help='Output subdirectory suffix', default='')
 @click.option('-k', '--api-key', type=click.Path(dir_okay=False, exists=True),
               help='File containing OpenAI API key (if not given, OPENAI_API_KEY env var must be set)')
 @click.option('-m', '--model-name', default='gpt-4o')
 @click.option('-p', '--parallelism', default=5)
 @click.option('--seed', type=int, default=42, help='Random seed')
-def openai(prompt_template, input_jsonl, output_dir, outdir_name, api_key, model_name, parallelism, seed):
+def openai(prompt_template, input_jsonl, output_dir, outdir_name, outdir_suffix, api_key, model_name, parallelism, seed):
     set_seed(seed)
     if not api_key and not os.environ.get('OPENAI_API_KEY'):
         raise click.UsageError('Need one of --api-key or OPENAI_API_KEY!')
@@ -294,6 +301,7 @@ def openai(prompt_template, input_jsonl, output_dir, outdir_name, api_key, model
         fn=_openai_gen_article,
         prompt_template=prompt_template,
         out_dir=output_dir,
+        out_dir_suffix=outdir_suffix,
         client=client,
         model_name=model_name)
     _generate_articles(input_jsonl, fn, parallelism)
@@ -304,6 +312,7 @@ def openai(prompt_template, input_jsonl, output_dir, outdir_name, api_key, model
 @click.argument('input-jsonl', type=click.Path(dir_okay=False, exists=True), nargs=-1)
 @click.option('-o', '--output-dir', type=click.Path(file_okay=False), help='Output directory',
               default=os.path.join('data', 'text-llm'))
+@click.option('-s', '--outdir-suffix', help='Output subdirectory suffix', default='')
 @click.option('-m', '--model-name', default='gemini-pro')
 @click.option('-n', '--outdir-name', help='Output subdirectory name (defaults to model name)')
 @click.option('-p', '--parallelism', default=5)
@@ -314,7 +323,8 @@ def openai(prompt_template, input_jsonl, output_dir, outdir_name, api_key, model
 @click.option('-k', '--top-k', type=click.IntRange(1, 40), help='Top-k sampling')
 @click.option('--top-p', type=click.FloatRange(0, 1), help='Top-p sampling')
 @click.option('--seed', type=int, default=42, help='Random seed')
-def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, parallelism, seed, **kwargs):
+def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, outdir_suffix,
+             parallelism, seed, **kwargs):
     set_seed(seed)
     output_dir = Path(output_dir) / (outdir_name if outdir_name else model_name.replace('@', '-').lower())
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -324,6 +334,7 @@ def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, 
         fn=_vertexai_gen_article,
         prompt_template=prompt_template,
         out_dir=output_dir,
+        out_dir_suffix=outdir_suffix,
         model_name=model_name,
         **kwargs)
 
@@ -340,6 +351,7 @@ def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, 
 @click.option('-o', '--output-dir', type=click.Path(file_okay=False),
               default=os.path.join('data', 'text-llm'), help='Output directory')
 @click.option('-n', '--outdir-name', help='Output subdirectory name (defaults to model name)')
+@click.option('--outdir-suffix', help='Output subdirectory suffix', default='')
 @click.option('-d', '--device', type=click.Choice(['auto', 'cuda', 'cpu']), default='auto',
               help='Select device to run model on')
 @click.option('-m', '--min-length', type=click.IntRange(1), default=300, help='Minimum length in tokens')
@@ -360,8 +372,8 @@ def vertexai(prompt_template, input_jsonl, output_dir, model_name, outdir_name, 
 @click.option('-q', '--quantization', type=click.Choice(['4', '8']))
 @click.option('--trust-remote-code', is_flag=True, help='Trust remote code')
 @click.option('--seed', type=int, default=42, help='Random seed')
-def huggingface_chat(model_name, prompt_template, input_jsonl, output_dir, outdir_name, device, quantization,
-                     min_length, max_new_tokens, top_k, top_p, penalty_alpha, decay_start, decay_factor,
+def huggingface_chat(model_name, prompt_template, input_jsonl, output_dir, outdir_name, outdir_suffix, device,
+                     quantization, min_length, max_new_tokens, top_k, top_p, penalty_alpha, decay_start, decay_factor,
                      strip_thinking, cot_factor, better_transformer, flash_attn, trust_remote_code, seed, **kwargs):
     set_seed(seed)
     model_name_out = model_name
@@ -411,7 +423,7 @@ def huggingface_chat(model_name, prompt_template, input_jsonl, output_dir, outdi
     ))
 
     fn = partial(_map_records_to_files, fn=_huggingface_chat_gen_article,
-                 prompt_template=prompt_template, out_dir=output_dir, **kwargs)
+                 prompt_template=prompt_template, out_dir=output_dir, out_dir_suffix=outdir_suffix, **kwargs)
 
     _generate_articles(input_jsonl, fn)
 

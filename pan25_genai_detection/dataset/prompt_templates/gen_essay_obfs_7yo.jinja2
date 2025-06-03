@@ -1,0 +1,8 @@
+{%- set summary = article_data['summary'] -%}
+Write an argumentative essay about the topic "{{ summary['main_topic'] }}.
+Write like a 7-year-old first-grader, misspell words, make random associations, add random words here and there.
+The essay should include the following key points:
+{% for kp in summary['key_points'] -%}
+- {{ kp }}
+{% endfor %}
+Don't add a title or author name.
