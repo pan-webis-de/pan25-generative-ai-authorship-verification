@@ -24,3 +24,27 @@ cat data/splits/*-train.jsonl | shuf --random-source=<(yes 42) > data/splits/tra
 cat data/splits/*-val.jsonl | shuf --random-source=<(yes 42) > data/splits/val.jsonl
 cat data/splits/*-test.jsonl | shuf --random-source=<(yes 42) > data/splits/test.jsonl
 cat data/splits/*-test-truth.jsonl | shuf --random-source=<(yes 42) > data/splits/test-truth.jsonl
+
+echo
+cat <<EOF | tee data/splits/summary.txt
+----------
+Checksums:
+----------
+$(md5sum data/splits/*)
+
+------------
+Split sizes:
+------------
+$(wc -l data/splits/train.jsonl data/splits/val.jsonl data/splits/test.jsonl)
+
+--------------
+Class balance:
+--------------
+$(for s in "train" "val" "test-truth"; do
+    python3 -c "import pandas as pd; \
+        df = pd.read_json('data/splits/${s}.jsonl', lines=True); \
+        nm = df['label'].sum(); \
+        nh = len(df) - nm; \
+        print(f'{'$s'.replace('-truth', '').capitalize()} set balance human/machine: {nh}/{nm} ({nh/nm:.2f})')"
+done)
+EOF

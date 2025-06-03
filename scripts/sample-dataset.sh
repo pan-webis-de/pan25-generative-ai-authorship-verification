@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Main train / val / test split (excludes o1 and deepseek for riddell-juola)
 # shellcheck disable=SC2046
 dataset-sample sample-balanced \
     -h data/summaries/pan25-gutenberg-19c-fiction.jsonl \
@@ -24,7 +25,7 @@ dataset-sample sample-balanced \
 
 dataset-sample sample-balanced \
     -h data/summaries/pan25-riddell-juola.jsonl \
-    $(for m in data/text-llm-jsonl/riddell-juola/*; do echo "-m $m"; done | grep -v o1) \
+    $(for m in data/text-llm-jsonl/riddell-juola/*; do echo "-m $m"; done | grep -v 'o1\|deepseek') \
     --scramble-ids \
     --genre essays \
     --output-file data/sampled/riddell-juola.jsonl \
@@ -46,15 +47,40 @@ dataset-sample sample-balanced \
     --output-file data/sampled/pan24.jsonl \
     --max-imbalance 4
 
+# Held-back o1 texts
+dataset-sample sample-balanced \
+    -m data/text-llm-jsonl/gutenberg-19c-fiction/gutenberg-19c-fiction-o1.jsonl \
+    -m data/text-llm-jsonl/gutenberg-19c-fiction/gutenberg-19c-fiction-o1-mini.jsonl \
+    --scramble-ids \
+    --genre fiction \
+    --max-machine 100 \
+    --output-file data/sampled/gutenberg-19c-fiction-o1.jsonl
+
+dataset-sample sample-balanced \
+    -m data/text-llm-jsonl/riddell-juola/riddell-juola-deepseek-r1-distill-qwen-32b.jsonl \
+    --scramble-ids \
+    --genre essays \
+    --max-machine 100 \
+    --output-file data/sampled/riddell-juola-o1-deepseek.jsonl
+
+dataset-sample sample-balanced \
+    -m data/text-llm-jsonl/pan24-train/pan24-train-openai-o1.jsonl \
+    --scramble-ids \
+    --genre news \
+    --max-machine 100 \
+    --output-file data/sampled/pan24-o1.jsonl
+
 # Obfuscations
 dataset-sample sample-balanced \
-    $(for m in data/text-llm-jsonl/brennan-greenstadt-obfuscated/*; do echo "-m $m"; done | grep -v o1) \
+    $(for m in data/text-llm-jsonl/brennan-greenstadt-obfuscated/*; do echo "-m $m"; done) \
     --scramble-ids \
     --genre essays-obfs \
+    --max-machine 300 \
     --output-file data/sampled/brennan-greenstadt-obfuscated.jsonl
 
 dataset-sample sample-balanced \
-    $(for m in data/text-llm-jsonl/riddell-juola-obfuscated/*; do echo "-m $m"; done | grep -v o1) \
+    $(for m in data/text-llm-jsonl/riddell-juola-obfuscated/*; do echo "-m $m"; done) \
     --scramble-ids \
     --genre essays-obfs \
+    --max-machine 300 \
     --output-file data/sampled/riddell-juola-obfuscated.jsonl
