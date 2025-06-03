@@ -53,7 +53,7 @@ dataset-sample sample-balanced \
     -m data/text-llm-jsonl/gutenberg-19c-fiction/gutenberg-19c-fiction-o1-mini.jsonl \
     --scramble-ids \
     --genre fiction \
-    --max-machine 100 \
+    --max-machine 200 \
     --output-file data/sampled/gutenberg-19c-fiction-o1.jsonl
 
 dataset-sample sample-balanced \
