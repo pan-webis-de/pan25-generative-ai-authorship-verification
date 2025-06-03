@@ -154,8 +154,10 @@ def sample_balanced(human, machine, output_file, scramble_ids, id_salt, max_imba
                     min_length, no_end_fixup, genre, seed):
     random.seed(seed)
 
-    if not human or not machine:
-        raise click.UsageError('Need at least one human and one machine input file.')
+    if not machine:
+        raise click.UsageError('Need at least one one machine input file.')
+    if not human:
+        click.echo('Warning: No human text given, sampling ALL machine texts.')
 
     human = sorted(human)
     machine = sorted(machine)
@@ -167,7 +169,7 @@ def sample_balanced(human, machine, output_file, scramble_ids, id_salt, max_imba
     selected_human = set()
     selected_machine = set()
     for h_id, m_id in tqdm(zip_longest(h_it, m_it), desc='Sampling IDs'):
-        if len(selected_machine) > 0 and len(selected_machine) / len(selected_human) > max_imbalance:
+        if human and len(selected_machine) > 0 and len(selected_machine) / len(selected_human) > max_imbalance:
             break
 
         if h_id in selected_human or h_id in selected_machine:
@@ -230,9 +232,9 @@ def sample_balanced(human, machine, output_file, scramble_ids, id_salt, max_imba
 @click.argument('input_file', type=click.Path(dir_okay=False, exists=True), nargs=-1)
 @click.option('-o', '--output-dir', type=click.Path(file_okay=False, exists=False),
               help='Output directory', default=os.path.join('data', 'splits'))
-@click.option('-v', '--val-size', type=click.FloatRange(0, 1, max_open=True),
+@click.option('-v', '--val-size', type=click.FloatRange(0, 1),
               default=.1, help='Validation split size')
-@click.option('-t', '--test-size', type=click.FloatRange(0, 1, max_open=True),
+@click.option('-t', '--test-size', type=click.FloatRange(0, 1),
               default=.2, help='Test split size')
 @click.option('--seed', type=int, default=42, help='Random seed')
 def split(input_file, output_dir, val_size, test_size, seed):
@@ -277,5 +279,6 @@ def split(input_file, output_dir, val_size, test_size, seed):
             _dump_jsonl(lines[val_size:val_size + test_size], truth_out, allowed_fields_truth,
                         add_fields={'source': f.stem})
 
-        train_out = output_dir / (f.stem + '-train.jsonl')
-        _dump_jsonl(lines[val_size + test_size:], train_out, allowed_fields)
+        if val_size + test_size < len(lines):
+            train_out = output_dir / (f.stem + '-train.jsonl')
+            _dump_jsonl(lines[val_size + test_size:], train_out, allowed_fields)

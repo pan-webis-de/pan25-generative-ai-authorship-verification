@@ -45,3 +45,16 @@ dataset-sample sample-balanced \
     --genre news \
     --output-file data/sampled/pan24.jsonl \
     --max-imbalance 4
+
+# Obfuscations
+dataset-sample sample-balanced \
+    $(for m in data/text-llm-jsonl/brennan-greenstadt-obfuscated/*; do echo "-m $m"; done | grep -v o1) \
+    --scramble-ids \
+    --genre essays-obfs \
+    --output-file data/sampled/brennan-greenstadt-obfuscated.jsonl
+
+dataset-sample sample-balanced \
+    $(for m in data/text-llm-jsonl/riddell-juola-obfuscated/*; do echo "-m $m"; done | grep -v o1) \
+    --scramble-ids \
+    --genre essays-obfs \
+    --output-file data/sampled/riddell-juola-obfuscated.jsonl
