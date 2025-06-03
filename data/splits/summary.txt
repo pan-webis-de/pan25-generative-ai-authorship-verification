@@ -7,12 +7,18 @@ afcbe1aa9d36c5211fee770a1c621855  data/splits/brennan-greenstadt-test.jsonl
 67de843ff85e2eaa8523492beb833106  data/splits/brennan-greenstadt-test-truth.jsonl
 e118fbbf8167f867f11bfef1e3da16a9  data/splits/brennan-greenstadt-train.jsonl
 5fbea7d84bd88ff100455c019fc819ce  data/splits/brennan-greenstadt-val.jsonl
+68d35be8cf2d802c3df425800391efe2  data/splits/gutenberg-19c-fiction-o1-test.jsonl
+d3f7f81e6552b00ef628cd6b65cd710f  data/splits/gutenberg-19c-fiction-o1-test-truth.jsonl
 0e4264ccc0f57331d2468662048a437e  data/splits/gutenberg-19c-fiction-test.jsonl
 93cfa34764e01c5f2827cb8ede9de6d9  data/splits/gutenberg-19c-fiction-test-truth.jsonl
 900c0336ec8622b6acccc198542e7e10  data/splits/gutenberg-19c-fiction-train.jsonl
 28ddc1c076d664caa85d6b19b7bf0f90  data/splits/gutenberg-19c-fiction-val.jsonl
+df11767dd7222b4c3b2acb5aedd110d9  data/splits/pan24-o1-test.jsonl
+fb807aa36f5e142a6aae36b2998b3584  data/splits/pan24-o1-test-truth.jsonl
 7d3e52e59f420b962f99631de1fad900  data/splits/pan24-train.jsonl
 027206b73142a182b65fda21f7d86fe6  data/splits/pan24-val.jsonl
+ad051c87911823bf5bdb61d6ffa47fb8  data/splits/riddell-juola-o1-deepseek-test.jsonl
+c67df88bd4ea5058786f7f89d0ad8ccf  data/splits/riddell-juola-o1-deepseek-test-truth.jsonl
 75d13becdfe0b371f84729be502bd5ee  data/splits/riddell-juola-obfuscated-test.jsonl
 79c8be4c77382a0acc91f8f81dc19645  data/splits/riddell-juola-obfuscated-test-truth.jsonl
 efd48458a88932854938298e28668f70  data/splits/riddell-juola-test.jsonl
@@ -20,8 +26,8 @@ efd48458a88932854938298e28668f70  data/splits/riddell-juola-test.jsonl
 90ed6c4db13f225873dfc5dac018b5fa  data/splits/riddell-juola-train.jsonl
 2dd0a60cdca0b57bc71f5c15794b19fa  data/splits/riddell-juola-val.jsonl
 d41d8cd98f00b204e9800998ecf8427e  data/splits/summary.txt
-db40780b28b4c75029d0f1966ea56aef  data/splits/test.jsonl
-55ddbfcb9126a2e9bc5bfa32f608bd4e  data/splits/test-truth.jsonl
+93d073b0e05a248845ef32d7a8050207  data/splits/test.jsonl
+501354e847b3d3ce97716d6845a562dd  data/splits/test-truth.jsonl
 34be2e88023969c88cb02f9576fdc3c8  data/splits/train.jsonl
 f87d0d13d28442dd52c25a50327c841c  data/splits/val.jsonl
 
@@ -30,12 +36,12 @@ Split sizes:
 ------------
     23707 data/splits/train.jsonl
      3589 data/splits/val.jsonl
-     3768 data/splits/test.jsonl
-    31064 total
+     4168 data/splits/test.jsonl
+    31464 total
 
 --------------
 Class balance:
 --------------
 Train set balance human/machine: 9101/14606 (0.62)
 Val set balance human/machine: 1277/2312 (0.55)
-Test set balance human/machine: 1225/2543 (0.48)
+Test set balance human/machine: 1225/2943 (0.42)

@@ -13,13 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Main train / val / test split
 dataset-sample split data/sampled/pan24.jsonl -v .2 -t 0
 dataset-sample split data/sampled/riddell-juola.jsonl -v .1 -t .2
 dataset-sample split data/sampled/brennan-greenstadt.jsonl -v .1 -t .2
 dataset-sample split data/sampled/gutenberg-19c-fiction.jsonl -v .1 -t .1
+
+# Extra test data
 dataset-sample split data/sampled/riddell-juola-obfuscated.jsonl -v 0 -t 1
 dataset-sample split data/sampled/brennan-greenstadt-obfuscated.jsonl -v 0 -t 1
+dataset-sample split data/sampled/gutenberg-19c-fiction-o1.jsonl -v 0 -t 1
+dataset-sample split data/sampled/pan24-o1.jsonl -v 0 -t 1
+dataset-sample split data/sampled/riddell-juola-o1-deepseek.jsonl -v 0 -t 1
 
+# Combine splits
 cat data/splits/*-train.jsonl | shuf --random-source=<(yes 42) > data/splits/train.jsonl
 cat data/splits/*-val.jsonl | shuf --random-source=<(yes 42) > data/splits/val.jsonl
 cat data/splits/*-test.jsonl | shuf --random-source=<(yes 42) > data/splits/test.jsonl
