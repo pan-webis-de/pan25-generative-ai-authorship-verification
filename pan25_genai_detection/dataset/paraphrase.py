@@ -14,6 +14,7 @@
 
 import os
 from pathlib import Path
+import re
 import typing as t
 
 import click
@@ -32,13 +33,15 @@ def main():
 @click.argument('input-dir', type=click.Path(file_okay=False, exists=True))
 @click.option('-o', '--output-dir', help='Output directory', default=os.path.join(
     'data', 'text-llm-paraphrased'))
-@click.option('-m', '--model', help='Model name or path', default='kalpeshk2011/dipper-paraphraser-xxl')
+@click.option('-m', '--model', help='Model name or path',
+              default='kalpeshk2011/dipper-paraphraser-xxl')
 @click.option('-d', '--device-map', help='Model device map', default='auto')
 @click.option('--lex-diversity', help='Lexical diversity of the output',
               type=click.Choice(['0', '20', '40', '60', '80', '100']), default='60')
 @click.option('--order-diversity', help='Order diversity of the output',
               type=click.Choice(['0', '20', '40', '60', '80', '100']), default='0')
-@click.option('--prefix', help='Prompt prefix', default='')
+@click.option('--prefix', help='Prompt prefix',
+              default='In a shocking finding, scientist discovered a herd of unicorns living in a remote valley.')
 @click.option('-i', '--sent-interval', help='Sentence span / interval',
               type=click.IntRange(1), default=3)
 @click.option('-m', '--min-length', type=click.IntRange(1), default=300, help='Minimum length in tokens')
@@ -83,7 +86,7 @@ def dipper(input_dir, output_dir, model, device_map, lex_diversity, order_divers
     lex_code = int(100 - int(lex_diversity))
     order_code = int(100 - int(order_diversity))
 
-    tokenizer = T5Tokenizer.from_pretrained('google/t5-v1_1-xxl')
+    tokenizer = T5Tokenizer.from_pretrained('google/t5-v1_1-xxl', legacy=False)
     model = T5ForConditionalGeneration.from_pretrained(model, device_map=device_map)
     model.eval()
     if better_transformer:
@@ -95,24 +98,23 @@ def dipper(input_dir, output_dir, model, device_map, lex_diversity, order_divers
         do_sample=True,
         top_k=top_k if top_k > 0 else None,
         top_p=top_p,
-        temperature=temperature,
-        eos_token_id=tokenizer.eos_token_id,
-        pad_token_id=tokenizer.eos_token_id,
+        temperature=temperature
     )
 
     nltk.download('punkt_tab')
 
-    user_prefix = prefix
+    user_prefix = ' '.join(prefix.split())
     input_dir = Path(input_dir)
     input_files = input_dir.rglob('**/*.txt')
+    input_files = list(input_files)
     for infile in tqdm(input_files, desc='Paraphrasing texts', unit='t'):
-        out_file = Path(output_dir) / infile.relative_to(input_dir.parent)
+        out_file = Path(output_dir) / infile.relative_to(input_dir.parent.parent)
         if out_file.exists():
             continue
 
         input_text = infile.read_text()
         output_text = []
-        prefix = ' '.join(user_prefix.split())
+        prefix = [user_prefix]
 
         for paragraph in input_text.strip().split('\n\n'):
             output_paragraph = []
@@ -122,17 +124,24 @@ def dipper(input_dir, output_dir, model, device_map, lex_diversity, order_divers
                 curr_sent_window = ' '.join(sentences[sent_idx:sent_idx + sent_interval])
                 paragraph = f'lexical = {lex_code}, order = {order_code}'
                 if prefix:
-                    paragraph += f' {prefix}'
+                    paragraph += f' {' '.join(prefix)}'
                 paragraph += f' <sent> {curr_sent_window} </sent>'
-                input_tokens = tokenizer([paragraph], return_tensors='pt', max_length=max_length).to(model.device)
+                input_tokens = tokenizer([paragraph],
+                                         return_tensors='pt',
+                                         max_length=max_length,
+                                         truncation=True).to(model.device)
                 with torch.inference_mode():
-                    outputs = model.generate(**input_tokens, **generation_args)
-                outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
-                prefix += ' ' + outputs[0]
-                output_paragraph.append(outputs[0])
+                    output = model.generate(**input_tokens, **generation_args)
+                output = tokenizer.batch_decode(output, skip_special_tokens=True)[0]
+                # Strip weird ' . . . . .' or ' * * *** * *' etc. artefacts
+                output = re.sub(r'\s+[\s.*\d‘’“”\'"«»/\-–—()\[\]?]{2,}', ' ', output)
+                # Restrict context to at most three sentences
+                if len(prefix) > 3:
+                    prefix = prefix[-3:]
+                output_paragraph.append(output.strip())
 
             output_text.append(' '.join(output_paragraph))
-            prefix = output_paragraph[-1]
+            prefix = [output_paragraph[-1]]
 
         out_file.parent.mkdir(parents=True, exist_ok=True)
         out_file.write_text('\n\n'.join(output_text))
