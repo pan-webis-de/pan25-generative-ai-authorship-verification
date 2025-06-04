@@ -47,6 +47,14 @@ dataset-sample sample-balanced \
     --output-file data/sampled/pan24.jsonl \
     --max-imbalance 4
 
+dataset-sample sample-balanced \
+    -h data/summaries/pan24-test-human.jsonl \
+    $(for m in data/text-llm-jsonl/pan24-test/*; do echo "-m $m"; done | grep -v o1) \
+    --scramble-ids \
+    --genre news \
+    --output-file data/sampled/pan24-test.jsonl \
+    --max-imbalance 1
+
 # Held-back o1 texts
 dataset-sample sample-balanced \
     -m data/text-llm-jsonl/gutenberg-19c-fiction/gutenberg-19c-fiction-o1.jsonl \

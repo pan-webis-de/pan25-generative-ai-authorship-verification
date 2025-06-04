@@ -24,6 +24,7 @@ dataset-sample split data/sampled/riddell-juola-obfuscated.jsonl -v 0 -t 1
 dataset-sample split data/sampled/brennan-greenstadt-obfuscated.jsonl -v 0 -t 1
 dataset-sample split data/sampled/gutenberg-19c-fiction-obfuscated.jsonl -v 0 -t 1
 dataset-sample split data/sampled/gutenberg-19c-fiction-o1.jsonl -v 0 -t 1
+dataset-sample split data/sampled/pan24-test.jsonl -v 0 -t 1
 dataset-sample split data/sampled/pan24-o1.jsonl -v 0 -t 1
 dataset-sample split data/sampled/riddell-juola-o1-deepseek.jsonl -v 0 -t 1
 
