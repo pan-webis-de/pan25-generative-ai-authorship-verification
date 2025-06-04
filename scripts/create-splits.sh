@@ -26,7 +26,10 @@ dataset-sample split data/sampled/gutenberg-19c-fiction-o1.jsonl -v 0 -t 1
 dataset-sample split data/sampled/pan24-o1.jsonl -v 0 -t 1
 dataset-sample split data/sampled/riddell-juola-o1-deepseek.jsonl -v 0 -t 1
 
-# Combine splits
+# ELOQUENT
+dataset-sample split data/sampled/eloquent.jsonl -v 0 -t 1
+
+# Combine splits (except ELOQUENT)
 cat data/splits/*-train.jsonl | shuf --random-source=<(yes 42) > data/splits/train.jsonl
 cat data/splits/*-val.jsonl | shuf --random-source=<(yes 42) > data/splits/val.jsonl
 cat data/splits/*-test.jsonl | shuf --random-source=<(yes 42) > data/splits/test.jsonl
@@ -42,12 +45,12 @@ $(md5sum data/splits/*)
 ------------
 Split sizes:
 ------------
-$(wc -l data/splits/train.jsonl data/splits/val.jsonl data/splits/test.jsonl)
+$(wc -l data/splits/train.jsonl data/splits/val.jsonl data/splits/test.jsonl data/splits/eloquent-test.jsonl)
 
 --------------
 Class balance:
 --------------
-$(for s in "train" "val" "test-truth"; do
+$(for s in "train" "val" "test-truth" "eloquent-test-truth"; do
     python3 -c "import pandas as pd; \
         df = pd.read_json('data/splits/${s}.jsonl', lines=True); \
         nm = df['label'].sum(); \

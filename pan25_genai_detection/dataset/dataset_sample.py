@@ -31,12 +31,13 @@ def main():
     pass
 
 
-def _scan_jsonl_ids(file, min_text_length=400, shuffle=True):
+def _scan_jsonl_ids(file: Path, min_text_length=400, shuffle=True, prefix_ids=False):
     ids = []
+    id_prefix = '/'.join([file.parent.name.lower(), file.stem.lower(), '']) if prefix_ids else ''
     for l in tqdm(open(file), desc='Scanning IDs', leave=False):
         j = json.loads(l)
         if j.get('text') and len(j['text']) >= min_text_length:
-            ids.append(j['id'])
+            ids.append(id_prefix + j['id'])
     if shuffle:
         random.shuffle(ids)
     return ids
@@ -142,6 +143,7 @@ def _fixup_midsentence_end(text):
 @click.option('-o', '--output-file', type=click.Path(dir_okay=False, exists=False),
               help='Output file', default=os.path.join('data', 'sampled', 'sampled.jsonl'))
 @click.option('-s', '--scramble-ids', is_flag=True, help='Scramble text IDs')
+@click.option('-p', '--prefix-ids', is_flag=True, help='Prefix IDs with input filename to make them unique')
 @click.option('--id-salt', help='Salt of ID scrambling', default='KLdCre0Vd')
 @click.option('-i', '--max-imbalance', type=click.FloatRange(0, min_open=True), default=4.0,
               help='Maximum class imbalance of machine/human')
@@ -151,7 +153,7 @@ def _fixup_midsentence_end(text):
 @click.option('--no-end-fixup', is_flag=True, help='Don\'t fixup generations ending mid-sentence')
 @click.option('--genre', help='Optional genre key to add to all texts')
 @click.option('--seed', type=int, default=42, help='Random seed')
-def sample_balanced(human, machine, output_file, scramble_ids, id_salt, max_imbalance, max_machine,
+def sample_balanced(human, machine, output_file, scramble_ids, prefix_ids, id_salt, max_imbalance, max_machine,
                     min_length, no_end_fixup, genre, seed):
     random.seed(seed)
 
@@ -162,8 +164,10 @@ def sample_balanced(human, machine, output_file, scramble_ids, id_salt, max_imba
 
     human = sorted(human)
     machine = sorted(machine)
-    human_ids = {h: _scan_jsonl_ids(h, min_text_length=min_length, shuffle=True) for h in human}
-    machine_ids = {m: _scan_jsonl_ids(m, min_text_length=min_length, shuffle=True) for m in machine}
+    human_ids = {h: _scan_jsonl_ids(Path(h), min_text_length=min_length, shuffle=True, prefix_ids=prefix_ids)
+                 for h in human}
+    machine_ids = {m: _scan_jsonl_ids(Path(m), min_text_length=min_length, shuffle=True, prefix_ids=prefix_ids)
+                   for m in machine}
 
     h_it = interleave_longest(*human_ids.values())
     m_it = interleave_longest(*machine_ids.values())
@@ -193,15 +197,24 @@ def sample_balanced(human, machine, output_file, scramble_ids, id_salt, max_imba
         id_file = output_file.parent / (output_file.with_suffix('').name + '-orig-ids.jsonl')
         id_file = id_file.open('w')
 
+    _it_current_file = None
+
     def _lines_it():
+        nonlocal _it_current_file
         for f in human:
+            _it_current_file = Path(f)
             yield from open(f)
         for f in machine:
+            _it_current_file = Path(f)
             yield from open(f)
 
     with output_file.open('w') as out:
         for l in tqdm(_lines_it(), desc='Generating sample'):
             record_data = json.loads(l)
+            if prefix_ids:
+                record_data['id'] = '/'.join([_it_current_file.parent.name.lower(),
+                                              _it_current_file.stem.lower(),
+                                              record_data['id']])
             if record_data['id'] in selected_human:
                 record_data['label'] = 0
                 record_data['model'] = 'human'

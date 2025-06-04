@@ -7,6 +7,8 @@ afcbe1aa9d36c5211fee770a1c621855  data/splits/brennan-greenstadt-test.jsonl
 67de843ff85e2eaa8523492beb833106  data/splits/brennan-greenstadt-test-truth.jsonl
 e118fbbf8167f867f11bfef1e3da16a9  data/splits/brennan-greenstadt-train.jsonl
 5fbea7d84bd88ff100455c019fc819ce  data/splits/brennan-greenstadt-val.jsonl
+a197ee790667c5a0cb7ab2b5fc30c72a  data/splits/eloquent-test.jsonl
+6f665b90b34f37e5093ca298ca5a0422  data/splits/eloquent-test-truth.jsonl
 68d35be8cf2d802c3df425800391efe2  data/splits/gutenberg-19c-fiction-o1-test.jsonl
 d3f7f81e6552b00ef628cd6b65cd710f  data/splits/gutenberg-19c-fiction-o1-test-truth.jsonl
 0e4264ccc0f57331d2468662048a437e  data/splits/gutenberg-19c-fiction-test.jsonl
@@ -26,8 +28,8 @@ efd48458a88932854938298e28668f70  data/splits/riddell-juola-test.jsonl
 90ed6c4db13f225873dfc5dac018b5fa  data/splits/riddell-juola-train.jsonl
 2dd0a60cdca0b57bc71f5c15794b19fa  data/splits/riddell-juola-val.jsonl
 d41d8cd98f00b204e9800998ecf8427e  data/splits/summary.txt
-93d073b0e05a248845ef32d7a8050207  data/splits/test.jsonl
-501354e847b3d3ce97716d6845a562dd  data/splits/test-truth.jsonl
+8d4575cf385bef3c5ae04b8fecc4a9e4  data/splits/test.jsonl
+595ae75a88c29c0dff95adf89012c31c  data/splits/test-truth.jsonl
 34be2e88023969c88cb02f9576fdc3c8  data/splits/train.jsonl
 f87d0d13d28442dd52c25a50327c841c  data/splits/val.jsonl
 
@@ -36,12 +38,14 @@ Split sizes:
 ------------
     23707 data/splits/train.jsonl
      3589 data/splits/val.jsonl
-     4168 data/splits/test.jsonl
-    31464 total
+     4453 data/splits/test.jsonl
+      285 data/splits/eloquent-test.jsonl
+    32034 total
 
 --------------
 Class balance:
 --------------
 Train set balance human/machine: 9101/14606 (0.62)
 Val set balance human/machine: 1277/2312 (0.55)
-Test set balance human/machine: 1225/2943 (0.42)
+Test set balance human/machine: 1247/3206 (0.39)
+Eloquent-test set balance human/machine: 22/263 (0.08)

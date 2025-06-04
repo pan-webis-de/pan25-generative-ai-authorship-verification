@@ -84,3 +84,13 @@ dataset-sample sample-balanced \
     --genre essays-obfs \
     --max-machine 300 \
     --output-file data/sampled/riddell-juola-obfuscated.jsonl
+
+# ELOQUENT
+dataset-sample sample-balanced \
+    -h data/eloquent25/human.jsonl \
+    $(for m in data/eloquent25/*; do echo "-m $m"; done | grep -v human) \
+    --scramble-ids \
+    --prefix-ids \
+    --genre mixed \
+    --max-imbalance 1000000 \
+    --output-file data/sampled/eloquent.jsonl
