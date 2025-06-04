@@ -1,18 +1,18 @@
 ----------
 Checksums:
 ----------
-5cd7f8c6a8794ed032b16d91b551db6f  data/splits/brennan-greenstadt-obfuscated-test.jsonl
-59907a7d3ea027d678f387b9c0366b1f  data/splits/brennan-greenstadt-obfuscated-test-truth.jsonl
+d3c50ee12a2fc5c0b3f4c5792ffd1234  data/splits/brennan-greenstadt-obfuscated-test.jsonl
+e7b5334b96fabadb41a36b4f38266879  data/splits/brennan-greenstadt-obfuscated-test-truth.jsonl
 afcbe1aa9d36c5211fee770a1c621855  data/splits/brennan-greenstadt-test.jsonl
 67de843ff85e2eaa8523492beb833106  data/splits/brennan-greenstadt-test-truth.jsonl
 e118fbbf8167f867f11bfef1e3da16a9  data/splits/brennan-greenstadt-train.jsonl
 5fbea7d84bd88ff100455c019fc819ce  data/splits/brennan-greenstadt-val.jsonl
 a197ee790667c5a0cb7ab2b5fc30c72a  data/splits/eloquent-test.jsonl
-6f665b90b34f37e5093ca298ca5a0422  data/splits/eloquent-test-truth.jsonl
+c634318cb8a8d76b791e6dc0d4ee0a76  data/splits/eloquent-test-truth.jsonl
 68d35be8cf2d802c3df425800391efe2  data/splits/gutenberg-19c-fiction-o1-test.jsonl
 d3f7f81e6552b00ef628cd6b65cd710f  data/splits/gutenberg-19c-fiction-o1-test-truth.jsonl
 dd5d98783d4ac7bbbb636d8ed64ea5fe  data/splits/gutenberg-19c-fiction-obfuscated-test.jsonl
-622078f4f1b4e1b08097c2c763d1f2b5  data/splits/gutenberg-19c-fiction-obfuscated-test-truth.jsonl
+d26af09f98c5e3fd542ec7e5efa60231  data/splits/gutenberg-19c-fiction-obfuscated-test-truth.jsonl
 0e4264ccc0f57331d2468662048a437e  data/splits/gutenberg-19c-fiction-test.jsonl
 93cfa34764e01c5f2827cb8ede9de6d9  data/splits/gutenberg-19c-fiction-test-truth.jsonl
 900c0336ec8622b6acccc198542e7e10  data/splits/gutenberg-19c-fiction-train.jsonl
@@ -23,15 +23,15 @@ fb807aa36f5e142a6aae36b2998b3584  data/splits/pan24-o1-test-truth.jsonl
 027206b73142a182b65fda21f7d86fe6  data/splits/pan24-val.jsonl
 ad051c87911823bf5bdb61d6ffa47fb8  data/splits/riddell-juola-o1-deepseek-test.jsonl
 c67df88bd4ea5058786f7f89d0ad8ccf  data/splits/riddell-juola-o1-deepseek-test-truth.jsonl
-75d13becdfe0b371f84729be502bd5ee  data/splits/riddell-juola-obfuscated-test.jsonl
-79c8be4c77382a0acc91f8f81dc19645  data/splits/riddell-juola-obfuscated-test-truth.jsonl
+ada2e9f43841d1d1060ff468262a85b2  data/splits/riddell-juola-obfuscated-test.jsonl
+efdcbfe6f5e478cc4a87bccb04f769af  data/splits/riddell-juola-obfuscated-test-truth.jsonl
 efd48458a88932854938298e28668f70  data/splits/riddell-juola-test.jsonl
 822d182a660e51bc031208674e2e8598  data/splits/riddell-juola-test-truth.jsonl
 90ed6c4db13f225873dfc5dac018b5fa  data/splits/riddell-juola-train.jsonl
 2dd0a60cdca0b57bc71f5c15794b19fa  data/splits/riddell-juola-val.jsonl
 d41d8cd98f00b204e9800998ecf8427e  data/splits/summary.txt
-f80f62567dd792a37f128bf6a9e0bacd  data/splits/test.jsonl
-021809f895b81875374e50e3ac6fcd69  data/splits/test-truth.jsonl
+df839a89d50b673c72fd4a4d6defa08e  data/splits/test.jsonl
+bab7d5330b98f2c978df560f3fced325  data/splits/test-truth.jsonl
 34be2e88023969c88cb02f9576fdc3c8  data/splits/train.jsonl
 f87d0d13d28442dd52c25a50327c841c  data/splits/val.jsonl
 
@@ -40,14 +40,14 @@ Split sizes:
 ------------
     23707 data/splits/train.jsonl
      3589 data/splits/val.jsonl
-     4553 data/splits/test.jsonl
+     4640 data/splits/test.jsonl
       285 data/splits/eloquent-test.jsonl
-    32134 total
+    32221 total
 
 --------------
 Class balance:
 --------------
 Train set balance human/machine: 9101/14606 (0.62)
 Val set balance human/machine: 1277/2312 (0.55)
-Test set balance human/machine: 1247/3306 (0.38)
+Test set balance human/machine: 1297/3343 (0.39)
 Eloquent-test set balance human/machine: 22/263 (0.08)

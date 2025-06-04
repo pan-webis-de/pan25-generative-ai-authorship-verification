@@ -72,24 +72,28 @@ dataset-sample sample-balanced \
 
 # Obfuscations
 dataset-sample sample-balanced \
-    $(for m in data/text-llm-jsonl/brennan-greenstadt-obfuscated/*; do echo "-m $m"; done) \
-    --scramble-ids \
-    --genre essays-obfs \
-    --max-machine 300 \
-    --output-file data/sampled/brennan-greenstadt-obfuscated.jsonl
-
-dataset-sample sample-balanced \
     $(for m in data/text-llm-jsonl/gutenberg-19c-fiction-obfuscated/*; do echo "-m $m"; done) \
     --scramble-ids \
-    --genre fiction \
+    --genre fiction-obfs \
     --max-machine 100 \
     --output-file data/sampled/gutenberg-19c-fiction-obfuscated.jsonl
 
 dataset-sample sample-balanced \
-    $(for m in data/text-llm-jsonl/riddell-juola-obfuscated/*; do echo "-m $m"; done) \
+    -h data/summaries/pan25-brennan-greenstadt-obfuscated.jsonl \
+    $(for m in data/text-llm-jsonl/brennan-greenstadt-obfuscated/*; do echo "-m $m"; done) \
     --scramble-ids \
     --genre essays-obfs \
     --max-machine 300 \
+    --max-imbalance 0 \
+    --output-file data/sampled/brennan-greenstadt-obfuscated.jsonl
+
+dataset-sample sample-balanced \
+    -h data/summaries/pan25-riddell-juola-obfuscated.jsonl \
+    $(for m in data/text-llm-jsonl/riddell-juola-obfuscated/*; do echo "-m $m"; done) \
+    --scramble-ids \
+    --genre essays-obfs \
+    --max-machine 600 \
+    --max-imbalance 0 \
     --output-file data/sampled/riddell-juola-obfuscated.jsonl
 
 # ELOQUENT
@@ -98,6 +102,6 @@ dataset-sample sample-balanced \
     $(for m in data/eloquent25/*; do echo "-m $m"; done | grep -v human) \
     --scramble-ids \
     --prefix-ids \
-    --genre mixed \
-    --max-imbalance 1000000 \
+    --genre mixed-obfs \
+    --max-imbalance 0 \
     --output-file data/sampled/eloquent.jsonl

@@ -145,8 +145,8 @@ def _fixup_midsentence_end(text):
 @click.option('-s', '--scramble-ids', is_flag=True, help='Scramble text IDs')
 @click.option('-p', '--prefix-ids', is_flag=True, help='Prefix IDs with input filename to make them unique')
 @click.option('--id-salt', help='Salt of ID scrambling', default='KLdCre0Vd')
-@click.option('-i', '--max-imbalance', type=click.FloatRange(0, min_open=True), default=4.0,
-              help='Maximum class imbalance of machine/human')
+@click.option('-i', '--max-imbalance', type=click.FloatRange(0), default=4.0,
+              help='Maximum class imbalance of machine/human (zero to disable)')
 @click.option('--max-machine', help='Hard limit for machine texts', type=int)
 @click.option('--min-length', type=click.FloatRange(0, min_open=True), default=800,
               help='Minimum text length in characters')
@@ -174,7 +174,8 @@ def sample_balanced(human, machine, output_file, scramble_ids, prefix_ids, id_sa
     selected_human = set()
     selected_machine = set()
     for h_id, m_id in tqdm(zip_longest(h_it, m_it), desc='Sampling IDs'):
-        if human and len(selected_machine) > 0 and len(selected_machine) / len(selected_human) > max_imbalance:
+        if (human and max_imbalance > 0 and len(selected_machine) > 0
+                and len(selected_machine) / len(selected_human) > max_imbalance):
             break
         if max_machine and len(selected_machine) >= max_machine:
             break

@@ -31,10 +31,10 @@ dataset-sample split data/sampled/riddell-juola-o1-deepseek.jsonl -v 0 -t 1
 dataset-sample split data/sampled/eloquent.jsonl -v 0 -t 1
 
 # Combine splits (except ELOQUENT)
-cat data/splits/*-train.jsonl | shuf --random-source=<(yes 42) > data/splits/train.jsonl
-cat data/splits/*-val.jsonl | shuf --random-source=<(yes 42) > data/splits/val.jsonl
-cat data/splits/*-test.jsonl | shuf --random-source=<(yes 42) > data/splits/test.jsonl
-cat data/splits/*-test-truth.jsonl | shuf --random-source=<(yes 42) > data/splits/test-truth.jsonl
+find data/splits/ -type f -name '*-train.jsonl' -print0 | sort -z | xargs -0 cat  | shuf --random-source=<(yes 42) > data/splits/train.jsonl
+find data/splits/ -type f -name '*-val.jsonl' -print0 | sort -z | xargs -0 cat  | shuf --random-source=<(yes 42) > data/splits/val.jsonl
+find data/splits/ -type f -name '*-test.jsonl' -a -! -name '*eloquent*' -print0 | sort -z | xargs -0 cat | shuf --random-source=<(yes 42) > data/splits/test.jsonl
+find data/splits/ -type f -name '*-test-truth.jsonl' -a -! -name '*eloquent*' -print0 | sort -z | xargs -0 cat | shuf --random-source=<(yes 42) > data/splits/test-truth.jsonl
 
 echo
 cat <<EOF | tee data/splits/summary.txt
