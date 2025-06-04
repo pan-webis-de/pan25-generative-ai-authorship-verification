@@ -79,6 +79,13 @@ dataset-sample sample-balanced \
     --output-file data/sampled/brennan-greenstadt-obfuscated.jsonl
 
 dataset-sample sample-balanced \
+    $(for m in data/text-llm-jsonl/gutenberg-19c-fiction-obfuscated/*; do echo "-m $m"; done) \
+    --scramble-ids \
+    --genre fiction \
+    --max-machine 100 \
+    --output-file data/sampled/gutenberg-19c-fiction-obfuscated.jsonl
+
+dataset-sample sample-balanced \
     $(for m in data/text-llm-jsonl/riddell-juola-obfuscated/*; do echo "-m $m"; done) \
     --scramble-ids \
     --genre essays-obfs \
