@@ -8,7 +8,7 @@ afcbe1aa9d36c5211fee770a1c621855  data/splits/brennan-greenstadt-test.jsonl
 e118fbbf8167f867f11bfef1e3da16a9  data/splits/brennan-greenstadt-train.jsonl
 5fbea7d84bd88ff100455c019fc819ce  data/splits/brennan-greenstadt-val.jsonl
 a197ee790667c5a0cb7ab2b5fc30c72a  data/splits/eloquent-test.jsonl
-c634318cb8a8d76b791e6dc0d4ee0a76  data/splits/eloquent-test-truth.jsonl
+6f665b90b34f37e5093ca298ca5a0422  data/splits/eloquent-test-truth.jsonl
 68d35be8cf2d802c3df425800391efe2  data/splits/gutenberg-19c-fiction-o1-test.jsonl
 d3f7f81e6552b00ef628cd6b65cd710f  data/splits/gutenberg-19c-fiction-o1-test-truth.jsonl
 dd5d98783d4ac7bbbb636d8ed64ea5fe  data/splits/gutenberg-19c-fiction-obfuscated-test.jsonl

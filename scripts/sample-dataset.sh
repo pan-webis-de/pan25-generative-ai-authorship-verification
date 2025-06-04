@@ -110,6 +110,6 @@ dataset-sample sample-balanced \
     $(for m in data/eloquent25/*; do echo "-m $m"; done | grep -v human) \
     --scramble-ids \
     --prefix-ids \
-    --genre mixed-obfs \
+    --genre mixed \
     --max-imbalance 0 \
     --output-file data/sampled/eloquent.jsonl
