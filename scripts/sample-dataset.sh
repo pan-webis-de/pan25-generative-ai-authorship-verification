@@ -107,9 +107,18 @@ dataset-sample sample-balanced \
 # ELOQUENT
 dataset-sample sample-balanced \
     -h data/eloquent25/human.jsonl \
-    $(for m in data/eloquent25/*; do echo "-m $m"; done | grep -v human) \
+    $(for m in data/eloquent25/*; do echo "-m $m"; done | grep -v 'human\|adhd') \
     --scramble-ids \
     --prefix-ids \
     --genre mixed \
     --max-imbalance 0 \
     --output-file data/sampled/eloquent.jsonl
+
+# ELOQUENT late submissions
+dataset-sample sample-balanced \
+    -m data/eloquent25/adhd.jsonl \
+    --scramble-ids \
+    --prefix-ids \
+    --genre mixed \
+    --max-imbalance 0 \
+    --output-file data/sampled/eloquent-late.jsonl

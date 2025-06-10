@@ -30,6 +30,7 @@ dataset-sample split data/sampled/riddell-juola-o1-deepseek.jsonl -v 0 -t 1
 
 # ELOQUENT
 dataset-sample split data/sampled/eloquent.jsonl -v 0 -t 1
+dataset-sample split data/sampled/eloquent-late.jsonl -v 0 -t 1
 
 # Combine splits (except ELOQUENT)
 find data/splits/ -type f -name '*-train.jsonl' -print0 | sort -z | xargs -0 cat  | shuf --random-source=<(yes 42) > data/splits/train.jsonl
