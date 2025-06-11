@@ -25,7 +25,7 @@ resiliparse = "^0.15.1"
 backoff = "^2.2.1"
 accelerate = "^1.4.0"
 bitsandbytes = "^0.45.2"
-tqdm = "^4.67.1"
+tqdm = {extras = ["notebook"], version = "^4.67.1"}
 jinja2 = "^3.1.5"
 google-cloud-aiplatform = "^1.81.0"
 matplotlib = "^3.10.0"
@@ -37,6 +37,7 @@ scikit-learn = "^1.6.1"
 tira = "^0.0.160"
 nltk = "^3.9.1"
 sentencepiece = "^0.2.0"
+notebook = "^7.4.3"
 
 [tool.poetry.scripts]
 summarize = 'pan25_genai_detection.dataset.summarize:main'
