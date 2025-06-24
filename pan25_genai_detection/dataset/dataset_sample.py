@@ -258,7 +258,7 @@ def split(input_file, output_dir, val_size, test_size, seed):
     random.seed(seed)
 
     if val_size + test_size > 1.0:
-        click.UsageError('Validation + test size cannot be more than 100% of dataset.')
+        click.UsagedError('Validation + test size cannot be more than 100% of dataset.')
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
