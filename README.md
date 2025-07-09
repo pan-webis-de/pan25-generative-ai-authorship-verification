@@ -11,6 +11,15 @@ The training data for the task can be found on [Zenodo](https://zenodo.org/recor
 
 The test data will be kept confidential for future editions of the task.
 
+### Installation
+
+Install dependencies via Poetry:
+
+```console
+$ pip install poetry
+$ poetry install
+```
+
 ### Cite
 
 You can cite the task as follows:
